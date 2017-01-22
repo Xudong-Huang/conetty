@@ -26,12 +26,14 @@ pub trait UdpServer: Service {
     /// Spawns the service, binding to the given address
     /// return a coroutine that you can cancel it when need to stop the service
     fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
-        let sock = Arc::new(UdpSocket::bind(addr)?);
-        let sock1 = sock.try_clone()?;
+        let sock = UdpSocket::bind(addr)?; // the write half
+        let sock1 = sock.try_clone()?; // the read half
         coroutine::Builder::new().name("UdpServer".to_owned()).spawn(move || {
             let server = Arc::new(self);
             let mut buf = vec![0u8; 1024];
-            let mutex = Arc::new(Mutex::new(()));
+            // the write half need to be protected by mutex
+            // for that coroutine io obj can't shared safely
+            let sock = Arc::new(Mutex::new(sock));
             loop {
                 // each udp packet should be less than 1024 bytes
                 let (len, addr) = t!(sock1.recv_from(&mut buf));
@@ -41,7 +43,7 @@ pub trait UdpServer: Service {
                 let req: Request = t!(bincode::serde::deserialize(&buf));
                 let sock = sock.clone();
                 let server = server.clone();
-                let mutex = mutex.clone();
+                // let mutex = mutex.clone();
                 coroutine::spawn(move || {
                     let rsp = Response {
                         id: req.id,
@@ -58,12 +60,11 @@ pub trait UdpServer: Service {
 
                     // send the result back to client
                     // udp no need to proect by a mutex, each send would be one frame
-                    let g = mutex.lock().unwrap();
-                    match sock.send_to(&data, addr) {
+                    let s = sock.lock().unwrap();
+                    match s.send_to(&data, addr) {
                         Ok(_) => {}
                         Err(err) => return error!("udp send_to failed, err={:?}", err),
                     }
-                    drop(g);
                 });
             }
         })

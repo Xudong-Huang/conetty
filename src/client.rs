@@ -76,31 +76,12 @@ fn wait_rsp(req_map: &WaitReqMap, id: usize, timeout: Duration) -> Result<Vec<u8
 pub struct UdpClient {
     // each request would have a unique id
     id: AtomicUsize,
-    // default timeout is 10s
-    timeout: Duration,
     // the connection
     sock: UdpSocket,
-    // mutex to sequence write
-    mutex: Mutex<()>,
-    // the waiting request
-    req_map: Arc<WaitReqMap>,
-    // the listening coroutine
-    listener: Option<coroutine::JoinHandle<()>>,
 }
 
 unsafe impl Send for UdpClient {}
 impl !Sync for UdpClient {}
-
-impl Drop for UdpClient {
-    fn drop(&mut self) {
-        println!("try to kill client listener");
-        self.listener.take().map(|h| {
-            unsafe { h.coroutine().cancel() };
-            h.join().ok();
-        });
-        println!("client listener finished");
-    }
-}
 
 impl UdpClient {
     /// connect to the server address
@@ -108,54 +89,18 @@ impl UdpClient {
         // this would bind a random port by the system
         let sock = UdpSocket::bind("0.0.0.0:0")?;
         sock.connect(addr)?;
-        let req_map = Arc::new(WaitReqMap::new());
-
-        // here we must clone the socket for read
-        // we can't share it between coroutines
-        let sock_1 = sock.try_clone()?;
-        let req_map_1 = req_map.clone();
-        let listener = coroutine::Builder::new().name("UdpClientListener".to_owned())
-            .spawn(move || {
-                let mut buf = Vec::with_capacity(1024);
-                buf.resize(1024, 0);
-                loop {
-                    t!(sock_1.recv(&mut buf));
-                    // deserialize the rsp
-                    let rsp: Response = t!(bincode::serde::deserialize(&buf));
-                    info!("receive rsp, id={}", rsp.id);
-
-                    // get the wait req
-                    req_map_1.get(rsp.id).map(move |req| {
-                        println!("set rsp for id={}", rsp.id);
-                        // set the response
-                        // req.rsp.swap(rsp.data.map_err(Error::from), Ordering::Release);
-                        req.rsp = Some(rsp.data.map_err(Error::from));
-                        // wake up the blocker
-                        req.blocker.unpark();
-                    });
-                }
-            })?;
+        sock.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
 
         Ok(UdpClient {
             id: AtomicUsize::new(0),
-            timeout: Duration::from_secs(10),
             sock: sock,
-            mutex: Mutex::new(()),
-            req_map: req_map,
-            listener: Some(listener),
         })
     }
 
     /// set the default timeout value
     /// the initial timeout is 10 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
-        self.timeout = timeout;
-        // self.sock.set_read_timeout(Some(timeout)).unwrap();
-    }
-
-    // wait for response
-    fn wait_rsp(&self, id: usize) -> Result<Vec<u8>, Error> {
-        wait_rsp(&self.req_map, id, self.timeout)
+        self.sock.set_read_timeout(Some(timeout)).unwrap();
     }
 
     /// call the server
@@ -163,7 +108,7 @@ impl UdpClient {
     pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let mut buf = Vec::with_capacity(1024);
         let id = self.id.fetch_add(1, Ordering::Relaxed);
-        println!("request id = {}", id);
+        info!("request id = {}", id);
 
         // serialize the request id
         bincode::serde::serialize_into(&mut buf, &id, Infinite)
@@ -174,12 +119,22 @@ impl UdpClient {
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // send the data to server
-        let g = self.mutex.lock().unwrap();
-        println!("yyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyyy id={}", id);
         self.sock.send(&buf).map_err(Error::from)?;
-        drop(g);
 
-        // wait for the rsp
-        self.wait_rsp(id)
+        // read the response
+        buf.resize(1024, 0);
+        loop {
+            self.sock.recv(&mut buf).map_err(Error::from)?;
+
+            // deserialize the rsp
+            let rsp: Response =
+                bincode::serde::deserialize(&buf).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+
+            // disgard the rsp that is is not belong to us
+            if rsp.id == id {
+                info!("get response id = {}", rsp.id);
+                return rsp.data.map_err(Error::from);
+            }
+        }
     }
 }
