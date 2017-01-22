@@ -2,6 +2,7 @@ use std::io;
 use std::sync::Arc;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
+use std::marker::PhantomData;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use bincode;
@@ -78,10 +79,12 @@ pub struct UdpClient {
     id: AtomicUsize,
     // the connection
     sock: UdpSocket,
+    // disable Sync
+    _mark: PhantomData<*mut usize>,
 }
 
+// the UdpClient is Send but not Sync
 unsafe impl Send for UdpClient {}
-impl !Sync for UdpClient {}
 
 impl UdpClient {
     /// connect to the server address
@@ -94,6 +97,7 @@ impl UdpClient {
         Ok(UdpClient {
             id: AtomicUsize::new(0),
             sock: sock,
+            _mark: PhantomData,
         })
     }
 

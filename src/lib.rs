@@ -1,5 +1,3 @@
- #![feature(optin_builtin_traits)]
-
 // #![deny(missing_docs)]
 #[doc(hidden)]
 extern crate coroutine;

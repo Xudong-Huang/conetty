@@ -19,7 +19,7 @@ impl Service for Echo {
 
 fn main() {
     env_logger::init().unwrap();
-    coroutine::scheduler_config().set_workers(4);
+    coroutine::scheduler_config().set_workers(4).set_io_workers(4);
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
@@ -33,8 +33,6 @@ fn main() {
         let j = coroutine::spawn(move || {
             for j in 0..10 {
                 let s = format!("Hello World! id={}, j={}", i, j);
-                // let data = client.call_service(s.as_bytes()).unwrap();
-                // println!("recv = {:?}", str::from_utf8(&data).unwrap());
                 let client = client.lock().unwrap();
                 match client.call_service(s.as_bytes()) {
                     Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
