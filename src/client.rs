@@ -1,5 +1,6 @@
 use std::io;
 use std::sync::Arc;
+use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::marker::PhantomData;
@@ -76,7 +77,7 @@ fn wait_rsp(req_map: &WaitReqMap, id: usize, timeout: Duration) -> Result<Vec<u8
 
 pub struct UdpClient {
     // each request would have a unique id
-    id: AtomicUsize,
+    id: RefCell<usize>,
     // the connection
     sock: UdpSocket,
     // disable Sync
@@ -95,7 +96,7 @@ impl UdpClient {
         sock.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
 
         Ok(UdpClient {
-            id: AtomicUsize::new(0),
+            id: RefCell::new(0),
             sock: sock,
             _mark: PhantomData,
         })
@@ -111,7 +112,11 @@ impl UdpClient {
     /// the request must be something that is already encoded
     pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let mut buf = Vec::with_capacity(1024);
-        let id = self.id.fetch_add(1, Ordering::Relaxed);
+        let id = {
+            let mut id = self.id.borrow_mut();
+            *id += 1;
+            *id
+        };
         info!("request id = {}", id);
 
         // serialize the request id
