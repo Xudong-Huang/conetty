@@ -21,6 +21,16 @@ pub use server::{Service, UdpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 
+macro_rules! t {
+    ($e: expr) => (match $e {
+        Ok(val) => val,
+        Err(err) => {
+            error!("call = {:?}\nerr = {:?}", stringify!($e), err);
+            continue;
+        }
+    })
+}
+
 /// Provides client framework.
 pub mod client;
 /// Provides server framework.
