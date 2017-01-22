@@ -89,7 +89,7 @@ impl UdpClient {
         // this would bind a random port by the system
         let sock = UdpSocket::bind("0.0.0.0:0")?;
         sock.connect(addr)?;
-        sock.set_read_timeout(Some(Duration::from_secs(10))).unwrap();
+        sock.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
 
         Ok(UdpClient {
             id: AtomicUsize::new(0),
@@ -98,7 +98,7 @@ impl UdpClient {
     }
 
     /// set the default timeout value
-    /// the initial timeout is 10 seconds
+    /// the initial timeout is 1 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
         self.sock.set_read_timeout(Some(timeout)).unwrap();
     }
