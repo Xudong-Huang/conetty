@@ -14,10 +14,10 @@ extern crate comanaged;
 
 pub use errors::Error;
 
-// #[doc(hidden)]
-// pub use client::{TcpClient, UdpClient};
-// #[doc(hidden)]
-// pub use server::{TcpServer, UdpServer};
+#[doc(hidden)]
+pub use client::UdpClient;
+#[doc(hidden)]
+pub use server::{Service, UdpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 
@@ -27,3 +27,5 @@ pub mod client;
 pub mod server;
 /// Provides a few different error types.
 mod errors;
+/// Provides request/response definition
+mod io;

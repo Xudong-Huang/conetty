@@ -1,28 +1,15 @@
-use std::io::{self, Read, Write};
-use std::net::ToSocketAddrs;
-use coroutine::sync::Mutex;
+use WireError;
 
-
-pub struct RpcIo<Io: Read + Write> {
-    // used to sequence the write action
-    mutex: Mutex<()>,
-    io: Io,
+/// raw request/response wrapper
+#[derive(Serialize, Deserialize)]
+pub struct Request {
+    pub id: usize,
+    pub data: Vec<u8>,
 }
 
-impl<Io: Read + Write> RpcIo<Io> {
-    pub fn new(io: Io) -> Self {
-        RpcIo {
-            mutex: Mutex::new(()),
-            io: io,
-        }
-    }
-
-    pub fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        self.io.read(buf)
-    }
-
-    pub fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        let mut guard = self.mutex.lock().unwrap();
-        self.io.write(buf)
-    }
+/// raw request/response wrapper
+#[derive(Serialize, Deserialize)]
+pub struct Response {
+    pub id: usize,
+    pub data: Result<Vec<u8>, WireError>,
 }
