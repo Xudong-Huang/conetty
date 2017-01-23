@@ -15,7 +15,7 @@ impl Service for Echo {
 }
 
 #[bench]
-fn echo(b: &mut Bencher) {
+fn tcp_echo(b: &mut Bencher) {
     let addr = ("127.0.0.1", 2000);
     let server = Echo.start(&addr).unwrap();
     let client = TcpClient::connect(addr).unwrap();

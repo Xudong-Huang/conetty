@@ -14,6 +14,7 @@ description = "An general client server framework for Rust based on coroutine."
 coroutine = { path = "../coroutine-rs" }
 comanaged =  { path = "../comanaged" }
 bincode = "0.6"
+bufstream = "0.1"
 log = "0.3"
 serde = "0.8"
 serde_derive = "0.8"

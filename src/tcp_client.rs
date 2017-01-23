@@ -2,7 +2,8 @@ use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::marker::PhantomData;
-use std::io::{self, BufReader, BufWriter};
+use std::io::{self, Write};
+use bufstream::BufStream;
 use io::Response;
 use errors::Error;
 use bincode::serde as encode;
@@ -13,7 +14,7 @@ pub struct TcpClient {
     // each request would have a unique id
     id: RefCell<usize>,
     // the connection
-    sock: TcpStream,
+    sock: BufStream<TcpStream>,
     // disable Sync
     _mark: PhantomData<*mut usize>,
 }
@@ -30,7 +31,7 @@ impl TcpClient {
 
         Ok(TcpClient {
             id: RefCell::new(0),
-            sock: sock,
+            sock: BufStream::with_capacities(1024, 1024, sock),
             _mark: PhantomData,
         })
     }
@@ -38,7 +39,7 @@ impl TcpClient {
     /// set the default timeout value
     /// the initial timeout is 5 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
-        self.sock.set_read_timeout(Some(timeout)).unwrap();
+        self.sock.get_ref().set_read_timeout(Some(timeout)).unwrap();
     }
 
     /// call the server
@@ -51,24 +52,24 @@ impl TcpClient {
         };
         info!("request id = {}", id);
 
-        let mut s = BufWriter::new(&self.sock);
+        let me = unsafe { &mut *(self as *const _ as *mut Self) };
+        let s = &mut me.sock;
 
         // serialize the request id
-        encode::serialize_into(&mut s, &id, Infinite)
+        encode::serialize_into(s, &id, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // serialize the request
-        encode::serialize_into(&mut s, &req, Infinite)
+        encode::serialize_into(s, &req, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // send the request
-        drop(s);
+        s.flush().unwrap();
 
         // read the response
-        let mut s = BufReader::with_capacity(1024, &self.sock);
         loop {
             // deserialize the rsp
-            let rsp: Response = encode::deserialize_from(&mut s, Infinite)
+            let rsp: Response = encode::deserialize_from(s, Infinite)
                 .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // disgard the rsp that is is not belong to us

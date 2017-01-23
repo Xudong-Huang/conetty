@@ -11,6 +11,8 @@ extern crate serde_derive;
 extern crate bincode;
 #[doc(hidden)]
 extern crate comanaged;
+#[doc(hidden)]
+extern crate bufstream;
 
 pub use errors::Error;
 
