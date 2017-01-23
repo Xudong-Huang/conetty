@@ -16,6 +16,8 @@ pub struct UdpClient {
     sock: UdpSocket,
     // disable Sync
     _mark: PhantomData<*mut usize>,
+    // send/recv buf
+    buf: Vec<u8>,
 }
 
 // the UdpClient is Send but not Sync
@@ -32,6 +34,7 @@ impl UdpClient {
         Ok(UdpClient {
             id: RefCell::new(0),
             sock: sock,
+            buf: Vec::with_capacity(1024),
             _mark: PhantomData,
         })
     }
@@ -45,7 +48,6 @@ impl UdpClient {
     /// call the server
     /// the request must be something that is already encoded
     pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
-        let mut buf = Vec::with_capacity(1024);
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;
@@ -53,12 +55,16 @@ impl UdpClient {
         };
         info!("request id = {}", id);
 
+        let me = unsafe { &mut *(self as *const _ as *mut Self) };
+        let buf = &mut me.buf;
+
+        buf.resize(0, 0);
         // serialize the request id
-        encode::serialize_into(&mut buf, &id, Infinite)
+        encode::serialize_into(buf, &id, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // serialize the request
-        encode::serialize_into(&mut buf, &req, Infinite)
+        encode::serialize_into(buf, &req, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // send the data to server
@@ -67,7 +73,7 @@ impl UdpClient {
         // read the response
         buf.resize(1024, 0);
         loop {
-            self.sock.recv(&mut buf).map_err(Error::from)?;
+            self.sock.recv(buf).map_err(Error::from)?;
 
             // deserialize the rsp
             let rsp: Response =
