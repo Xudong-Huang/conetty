@@ -16,8 +16,8 @@ pub use errors::Error;
 
 #[doc(hidden)]
 pub use udp_client::UdpClient;
-// #[doc(hidden)]
-// pub use tcp_client::TcpClient;
+#[doc(hidden)]
+pub use tcp_client::TcpClient;
 #[doc(hidden)]
 pub use server::{Service, UdpServer, TcpServer};
 #[doc(hidden)]
