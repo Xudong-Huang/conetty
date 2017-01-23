@@ -3,7 +3,7 @@ extern crate coroutine;
 extern crate env_logger;
 
 use std::str;
-use conetty::{Service, WireError, UdpServer, UdpClient};
+use conetty::{Service, WireError, TcpServer, TcpClient};
 
 struct Echo;
 
@@ -24,7 +24,7 @@ fn main() {
     let mut vec = vec![];
     for i in 0..8 {
         let j = coroutine::spawn(move || {
-            let client = UdpClient::connect(addr).unwrap();
+            let client = TcpClient::connect(addr).unwrap();
             for j in 0..10 {
                 let s = format!("Hello World! id={}, j={}", i, j);
                 match client.call_service(s.as_bytes()) {

@@ -70,8 +70,8 @@ impl UdpClient {
             self.sock.recv(&mut buf).map_err(Error::from)?;
 
             // deserialize the rsp
-            let rsp: Response = encode::deserialize(&buf)
-                .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+            let rsp: Response =
+                encode::deserialize(&buf).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // disgard the rsp that is is not belong to us
             if rsp.id == id {

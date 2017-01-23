@@ -1,8 +1,8 @@
-use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::marker::PhantomData;
+use std::io::{self, BufReader, BufWriter};
 use io::Response;
 use errors::Error;
 use bincode::serde as encode;
@@ -51,21 +51,24 @@ impl TcpClient {
         };
         info!("request id = {}", id);
 
-        let me = unsafe { &mut *(self as *const _ as *mut Self) };
-        let s = &mut me.sock;
+        let mut s = BufWriter::new(&self.sock);
 
         // serialize the request id
-        encode::serialize_into(s, &id, Infinite)
+        encode::serialize_into(&mut s, &id, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // serialize the request
-        encode::serialize_into(s, &req, Infinite)
+        encode::serialize_into(&mut s, &req, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
+        // send the request
+        drop(s);
+
         // read the response
+        let mut s = BufReader::with_capacity(1024, &self.sock);
         loop {
             // deserialize the rsp
-            let rsp: Response = encode::deserialize_from(s, Infinite)
+            let rsp: Response = encode::deserialize_from(&mut s, Infinite)
                 .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // disgard the rsp that is is not belong to us

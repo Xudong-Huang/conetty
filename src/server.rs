@@ -1,6 +1,6 @@
-use std::io;
 use std::sync::Arc;
 use std::net::ToSocketAddrs;
+use std::io::{self, BufReader, BufWriter, Write};
 use coroutine;
 use errors::WireError;
 use comanaged::Manager;
@@ -9,6 +9,7 @@ use io::{Request, Response};
 use bincode::serde as encode;
 use bincode::SizeLimit::Infinite;
 use coroutine::net::{UdpSocket, TcpListener};
+use bincode::serde::DeserializeError::IoError;
 
 /// must impl this trait for your server
 pub trait Service: Send + Sync + Sized + 'static {
@@ -85,14 +86,26 @@ pub trait TcpServer: Service {
                 let server = server.clone();
                 manager.add(move |_| {
                     // the read half of the stream
-                    let mut r_stream = stream.try_clone().expect("failed to clone stream");
+                    let mut rs = BufReader::new(stream.try_clone()
+                        .expect("failed to clone stream"));
                     // the write half need to be protected by mutex
                     // for that coroutine io obj can't shared safely
-                    let w_stream = Arc::new(Mutex::new(stream));
+                    let ws = Arc::new(Mutex::new(BufWriter::new(stream)));
                     loop {
-                        let req: Request = t!(encode::deserialize_from(&mut r_stream, Infinite));
+                        let req: Request = match encode::deserialize_from(&mut rs, Infinite) {
+                            Ok(r) => r,
+                            Err(IoError(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
+                                info!("connection is closed");
+                                break;
+                            }
+                            Err(ref e) => {
+                                error!("deserialize_from err={:?}", e);
+                                continue;
+                            }
+                        };
+
                         info!("get request: id={:?}", req.id);
-                        let w_stream = w_stream.clone();
+                        let w_stream = ws.clone();
                         let server = server.clone();
                         coroutine::spawn(move || {
                             let rsp = Response {
@@ -108,6 +121,7 @@ pub trait TcpServer: Service {
                                 Ok(_) => {}
                                 Err(err) => return error!("tcp serialize failed, err={:?}", err),
                             };
+                            w.flush().unwrap();
                         });
                     }
                 });
