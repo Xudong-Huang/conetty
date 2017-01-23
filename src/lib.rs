@@ -19,6 +19,8 @@ pub use udp_client::UdpClient;
 #[doc(hidden)]
 pub use tcp_client::TcpClient;
 #[doc(hidden)]
+pub use multiplex_client::MultiPlexClient;
+#[doc(hidden)]
 pub use server::{Service, UdpServer, TcpServer};
 #[doc(hidden)]
 pub use errors::WireError;
@@ -36,6 +38,7 @@ macro_rules! t {
 /// Provides client impl.
 mod udp_client;
 mod tcp_client;
+mod multiplex_client;
 /// Provides server framework.
 mod server;
 /// Provides a few different error types.
