@@ -15,9 +15,11 @@ extern crate comanaged;
 pub use errors::Error;
 
 #[doc(hidden)]
-pub use client::UdpClient;
+pub use udp_client::UdpClient;
+// #[doc(hidden)]
+// pub use tcp_client::TcpClient;
 #[doc(hidden)]
-pub use server::{Service, UdpServer};
+pub use server::{Service, UdpServer, TcpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 
@@ -31,10 +33,11 @@ macro_rules! t {
     })
 }
 
-/// Provides client framework.
-pub mod client;
+/// Provides client impl.
+mod udp_client;
+mod tcp_client;
 /// Provides server framework.
-pub mod server;
+mod server;
 /// Provides a few different error types.
 mod errors;
 /// Provides request/response definition

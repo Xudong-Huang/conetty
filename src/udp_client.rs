@@ -1,79 +1,13 @@
 use std::io;
-use std::sync::Arc;
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::marker::PhantomData;
-use std::collections::HashMap;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use bincode;
-use coroutine;
 use io::Response;
 use errors::Error;
+use bincode::serde as encode;
 use coroutine::net::UdpSocket;
 use bincode::SizeLimit::Infinite;
-use coroutine::sync::{Mutex, SyncBlocker};
-
-struct WaitReq {
-    blocker: Arc<SyncBlocker>,
-    rsp: Option<Result<Vec<u8>, Error>>,
-}
-
-struct WaitReqMap {
-    map: Mutex<HashMap<usize, *mut WaitReq>>,
-}
-
-unsafe impl Send for WaitReqMap {}
-unsafe impl Sync for WaitReqMap {}
-
-impl WaitReqMap {
-    pub fn new() -> Self {
-        WaitReqMap { map: Mutex::new(HashMap::new()) }
-    }
-
-    pub fn add(&self, id: usize, req: &mut WaitReq) {
-        let mut m = self.map.lock().unwrap();
-        m.insert(id, req as *mut _);
-    }
-
-    pub fn get(&self, id: usize) -> Option<&mut WaitReq> {
-        let mut m = self.map.lock().unwrap();
-        m.remove(&id).map(|v| { unsafe { &mut *v } })
-    }
-}
-
-// wait for response
-fn wait_rsp(req_map: &WaitReqMap, id: usize, timeout: Duration) -> Result<Vec<u8>, Error> {
-    let cur = SyncBlocker::current();
-    let mut req = WaitReq {
-        blocker: cur.clone(),
-        rsp: None,
-    };
-    req_map.add(id, &mut req);
-
-    use coroutine::ParkError;
-    match cur.park(Some(timeout)) {
-        Ok(_) => {
-            match req.rsp.take() {
-                Some(d) => d,
-                None => {
-                    println!("can't get rsp, id={}", id);
-                    panic!("unable to get the rsp");
-                }
-            }
-        }
-        Err(ParkError::Timeout) => {
-            // remove the req from req map
-            println!("timeout zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz, id={}", id);
-            req_map.get(id);
-            Err(Error::Timeout)
-        }
-        Err(ParkError::Canceled) => {
-            req_map.get(id);
-            coroutine::trigger_cancel_panic();
-        }
-    }
-}
 
 pub struct UdpClient {
     // each request would have a unique id
@@ -120,11 +54,11 @@ impl UdpClient {
         info!("request id = {}", id);
 
         // serialize the request id
-        bincode::serde::serialize_into(&mut buf, &id, Infinite)
+        encode::serialize_into(&mut buf, &id, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // serialize the request
-        bincode::serde::serialize_into(&mut buf, &req, Infinite)
+        encode::serialize_into(&mut buf, &req, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
         // send the data to server
@@ -136,8 +70,8 @@ impl UdpClient {
             self.sock.recv(&mut buf).map_err(Error::from)?;
 
             // deserialize the rsp
-            let rsp: Response =
-                bincode::serde::deserialize(&buf).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+            let rsp: Response = encode::deserialize(&buf)
+                .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // disgard the rsp that is is not belong to us
             if rsp.id == id {
