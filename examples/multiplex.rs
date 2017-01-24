@@ -5,14 +5,13 @@ extern crate env_logger;
 use std::str;
 use std::sync::Arc;
 use std::time::Duration;
-use coroutine::sync::Mutex;
-use conetty::{Service, WireError, UdpServer, UdpClient};
+use conetty::{Service, WireError, TcpServer, MultiPlexClient};
 
 struct Echo;
 
 impl Service for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
-        println!("req = {:?}", request);
+        // println!("req = {:?}", request);
         Ok(request.to_vec())
     }
 }
@@ -23,19 +22,18 @@ fn main() {
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
-    let mut client = UdpClient::connect(addr).unwrap();
+    let mut client = MultiPlexClient::connect(addr).unwrap();
     client.set_timeout(Duration::from_secs(5));
 
-    let client = Arc::new(Mutex::new(client));
+    let client = Arc::new(client);
     let mut vec = vec![];
-    for i in 0..8 {
+    for i in 0..100 {
         let client = client.clone();
         let j = coroutine::spawn(move || {
-            for j in 0..10 {
+            for j in 0..1000 {
                 let s = format!("Hello World! id={}, j={}", i, j);
-                let client = client.lock().unwrap();
                 match client.call_service(s.as_bytes()) {
-                    Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
+                    Ok(_data) => {} //println!("recv = {:?}", str::from_utf8(&data).unwrap()),
                     Err(err) => println!("recv err = {:?}", err),
                 }
             }

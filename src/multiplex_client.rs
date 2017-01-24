@@ -2,20 +2,22 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::collections::HashMap;
-use std::io::{self, BufReader, BufWriter};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::io::{self, BufReader, BufWriter, Write};
 use coroutine;
 use io::Response;
 use errors::Error;
 use bincode::serde as encode;
 use coroutine::net::TcpStream;
 use bincode::SizeLimit::Infinite;
-use coroutine::sync::{Mutex, SyncBlocker};
+use coroutine::sync::{AtomicOption, Blocker};
+// use coroutine::sync::Mutex;
+use std::sync::Mutex;
 use bincode::serde::DeserializeError::IoError;
 
 struct WaitReq {
-    blocker: Arc<SyncBlocker>,
-    rsp: Option<Result<Vec<u8>, Error>>,
+    blocker: Blocker,
+    rsp: AtomicOption<Result<Vec<u8>, Error>>,
 }
 
 struct WaitReqMap {
@@ -42,22 +44,21 @@ impl WaitReqMap {
 }
 
 // wait for response
-fn wait_rsp(req_map: &WaitReqMap, id: usize, timeout: Duration) -> Result<Vec<u8>, Error> {
-    let cur = SyncBlocker::current();
-    let mut req = WaitReq {
-        blocker: cur.clone(),
-        rsp: None,
-    };
-    req_map.add(id, &mut req);
-
+fn wait_rsp(req_map: &WaitReqMap,
+            id: usize,
+            timeout: Duration,
+            req: &mut WaitReq)
+            -> Result<Vec<u8>, Error> {
     use coroutine::ParkError;
-    match cur.park(Some(timeout)) {
+
+    match req.blocker.park(Some(timeout)) {
         Ok(_) => {
-            match req.rsp.take() {
+            match req.rsp.take(Ordering::Acquire) {
                 Some(d) => d,
                 None => {
                     println!("can't get rsp, id={}", id);
-                    panic!("unable to get the rsp");
+                    // panic!("unable to get the rsp");
+                    Err(Error::ClientDeserialize("asdfasd".to_string()))
                 }
             }
         }
@@ -109,7 +110,8 @@ impl MultiPlexClient {
 
         // here we must clone the socket for read
         // we can't share it between coroutines
-        let mut r_stream = BufReader::new(sock.try_clone()?);
+        let sock1 = sock.try_clone()?;
+        let mut r_stream = BufReader::new(sock1);
         let req_map_1 = req_map.clone();
         let listener = coroutine::Builder::new().name("MultiPlexClientListener".to_owned())
             .spawn(move || {
@@ -129,10 +131,9 @@ impl MultiPlexClient {
 
                     // get the wait req
                     req_map_1.get(rsp.id).map(move |req| {
-                        println!("set rsp for id={}", rsp.id);
                         // set the response
-                        // req.rsp.swap(rsp.data.map_err(Error::from), Ordering::Release);
-                        req.rsp = Some(rsp.data.map_err(Error::from));
+                        // req.rsp = Some(rsp.data.map_err(Error::from));
+                        req.rsp.swap(rsp.data.map_err(Error::from), Ordering::Release);
                         // wake up the blocker
                         req.blocker.unpark();
                     });
@@ -152,19 +153,21 @@ impl MultiPlexClient {
     /// the initial timeout is 10 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
         self.timeout = timeout;
-        // self.sock.set_read_timeout(Some(timeout)).unwrap();
-    }
-
-    // wait for response
-    fn wait_rsp(&self, id: usize) -> Result<Vec<u8>, Error> {
-        wait_rsp(&self.req_map, id, self.timeout)
     }
 
     /// call the server
     /// the request must be something that is already encoded
     pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
-        println!("request id = {}", id);
+        info!("request id = {}", id);
+
+        // must regiser before io
+        let cur = Blocker::new(false);
+        let mut rw = WaitReq {
+            blocker: cur,
+            rsp: AtomicOption::none(),
+        };
+        self.req_map.add(id, &mut rw);
 
         let mut g = self.sock.lock().unwrap();
 
@@ -176,9 +179,11 @@ impl MultiPlexClient {
         encode::serialize_into(&mut *g, &req, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
+        g.flush().map_err(Error::from)?;
+
         drop(g);
 
         // wait for the rsp
-        self.wait_rsp(id)
+        wait_rsp(&self.req_map, id, self.timeout, &mut rw)
     }
 }
