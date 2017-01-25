@@ -19,7 +19,6 @@ pub struct UdpClient {
 
 // the UdpClient is Send but not Sync
 unsafe impl Send for UdpClient {}
-unsafe impl Sync for UdpClient {}
 
 impl UdpClient {
     /// connect to the server address

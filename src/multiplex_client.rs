@@ -11,8 +11,7 @@ use bincode::serde as encode;
 use coroutine::net::TcpStream;
 use bincode::SizeLimit::Infinite;
 use coroutine::sync::{AtomicOption, Blocker};
-// use coroutine::sync::Mutex;
-use std::sync::Mutex;
+use coroutine::sync::Mutex;
 use bincode::serde::DeserializeError::IoError;
 
 struct WaitReq {
@@ -55,20 +54,17 @@ fn wait_rsp(req_map: &WaitReqMap,
         Ok(_) => {
             match req.rsp.take(Ordering::Acquire) {
                 Some(d) => d,
-                None => {
-                    println!("can't get rsp, id={}", id);
-                    // panic!("unable to get the rsp");
-                    Err(Error::ClientDeserialize("asdfasd".to_string()))
-                }
+                None => panic!("unable to get the rsp, id={}", id),
             }
         }
         Err(ParkError::Timeout) => {
             // remove the req from req map
-            println!("timeout zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz, id={}", id);
+            error!("timeout zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz, id={}", id);
             req_map.get(id);
             Err(Error::Timeout)
         }
         Err(ParkError::Canceled) => {
+            error!("canceled id={}", id);
             req_map.get(id);
             coroutine::trigger_cancel_panic();
         }
@@ -169,19 +165,17 @@ impl MultiPlexClient {
         };
         self.req_map.add(id, &mut rw);
 
-        let mut g = self.sock.lock().unwrap();
-
-        // serialize the request id
-        encode::serialize_into(&mut *g, &id, Infinite)
+        {
+            let mut g = self.sock.lock().unwrap();
+            // serialize the request id
+            encode::serialize_into(&mut *g, &id, Infinite)
+            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
+            // serialize the request
+            encode::serialize_into(&mut *g, &req, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
-        // serialize the request
-        encode::serialize_into(&mut *g, &req, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
-
-        g.flush().map_err(Error::from)?;
-
-        drop(g);
+            g.flush().map_err(Error::from)?;
+        }
 
         // wait for the rsp
         wait_rsp(&self.req_map, id, self.timeout, &mut rw)

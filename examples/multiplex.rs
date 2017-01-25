@@ -33,8 +33,9 @@ fn main() {
             for j in 0..1000 {
                 let s = format!("Hello World! id={}, j={}", i, j);
                 match client.call_service(s.as_bytes()) {
-                    Ok(_data) => {} //println!("recv = {:?}", str::from_utf8(&data).unwrap()),
+                    // Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
                     Err(err) => println!("recv err = {:?}", err),
+                    _ => {}
                 }
             }
             println!("thread done, id={}", i);

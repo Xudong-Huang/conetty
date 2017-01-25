@@ -9,7 +9,7 @@ struct Echo;
 
 impl Service for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
-        println!("req = {:?}", request);
+        // println!("req = {:?}", request);
         Ok(request.to_vec())
     }
 }
@@ -22,10 +22,10 @@ fn main() {
     let server = Echo.start(&addr).unwrap();
 
     let mut vec = vec![];
-    for i in 0..8 {
+    for i in 0..100 {
         let j = coroutine::spawn(move || {
             let client = TcpClient::connect(addr).unwrap();
-            for j in 0..10 {
+            for j in 0..1000 {
                 let s = format!("Hello World! id={}, j={}", i, j);
                 match client.call_service(s.as_bytes()) {
                     Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
