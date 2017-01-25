@@ -10,9 +10,8 @@ use errors::Error;
 use bincode::serde as encode;
 use coroutine::net::TcpStream;
 use bincode::SizeLimit::Infinite;
-use coroutine::sync::{AtomicOption, Blocker};
-use coroutine::sync::Mutex;
 use bincode::serde::DeserializeError::IoError;
+use coroutine::sync::{AtomicOption, Mutex, Blocker};
 
 struct WaitReq {
     blocker: Blocker,
@@ -89,12 +88,10 @@ unsafe impl Sync for MultiPlexClient {}
 
 impl Drop for MultiPlexClient {
     fn drop(&mut self) {
-        println!("try to kill client listener");
         self.listener.take().map(|h| {
             unsafe { h.coroutine().cancel() };
             h.join().ok();
         });
-        println!("client listener finished");
     }
 }
 
