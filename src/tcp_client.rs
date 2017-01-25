@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
-use std::marker::PhantomData;
 use std::io::{self, Write};
 use bufstream::BufStream;
 use io::Response;
@@ -15,8 +14,6 @@ pub struct TcpClient {
     id: RefCell<usize>,
     // the connection
     sock: BufStream<TcpStream>,
-    // disable Sync
-    _mark: PhantomData<*mut usize>,
 }
 
 // the TcpClient is Send but not Sync
@@ -32,7 +29,6 @@ impl TcpClient {
         Ok(TcpClient {
             id: RefCell::new(0),
             sock: BufStream::with_capacities(1024, 1024, sock),
-            _mark: PhantomData,
         })
     }
 

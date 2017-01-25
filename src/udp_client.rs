@@ -2,7 +2,6 @@ use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
-use std::marker::PhantomData;
 use io::Response;
 use errors::Error;
 use bincode::serde as encode;
@@ -14,14 +13,13 @@ pub struct UdpClient {
     id: RefCell<usize>,
     // the connection
     sock: UdpSocket,
-    // disable Sync
-    _mark: PhantomData<*mut usize>,
     // send/recv buf
     buf: Vec<u8>,
 }
 
 // the UdpClient is Send but not Sync
 unsafe impl Send for UdpClient {}
+unsafe impl Sync for UdpClient {}
 
 impl UdpClient {
     /// connect to the server address
@@ -35,7 +33,6 @@ impl UdpClient {
             id: RefCell::new(0),
             sock: sock,
             buf: Vec::with_capacity(1024),
-            _mark: PhantomData,
         })
     }
 
