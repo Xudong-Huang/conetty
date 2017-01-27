@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::io::{self, BufReader, BufWriter, Write};
+use std::io::{self, BufReader, Write};
 use coroutine;
 use io::Response;
 use errors::Error;
@@ -76,7 +76,7 @@ pub struct MultiPlexClient {
     // default timeout is 10s
     timeout: Duration,
     // the connection
-    sock: Mutex<BufWriter<TcpStream>>,
+    sock: Mutex<TcpStream>,
     // the waiting request
     req_map: Arc<WaitReqMap>,
     // the listening coroutine
@@ -136,7 +136,7 @@ impl MultiPlexClient {
         Ok(MultiPlexClient {
             id: AtomicUsize::new(0),
             timeout: Duration::from_secs(10),
-            sock: Mutex::new(BufWriter::new(sock)),
+            sock: Mutex::new(sock),
             req_map: req_map,
             listener: Some(listener),
         })
@@ -162,17 +162,17 @@ impl MultiPlexClient {
         };
         self.req_map.add(id, &mut rw);
 
-        {
-            let mut g = self.sock.lock().unwrap();
-            // serialize the request id
-            encode::serialize_into(&mut *g, &id, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
-            // serialize the request
-            encode::serialize_into(&mut *g, &req, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
+        let mut buf = Vec::with_capacity(1024);
+        // serialize the request id
+        encode::serialize_into(&mut buf, &id, Infinite)
+        .map_err(|e| Error::ClientSerialize(e.to_string()))?;
+        // serialize the request
+        encode::serialize_into(&mut buf, &req, Infinite)
+        .map_err(|e| Error::ClientSerialize(e.to_string()))?;
 
-            g.flush().map_err(Error::from)?;
-        }
+        let mut g = self.sock.lock().unwrap();
+        g.write(&buf).map_err(Error::from)?;
+        drop(g);
 
         // wait for the rsp
         wait_rsp(&self.req_map, id, self.timeout, &mut rw)
