@@ -35,7 +35,6 @@ impl EchoRpc for Echo {
 #[allow(non_camel_case_types)]
 #[derive(Debug, Serialize, Deserialize)]
 enum EchoRpcEnum {
-    __invalid(()),
     hello((String,)),
     add((u32, u32)),
 }
@@ -77,7 +76,7 @@ impl Service for Echo {
         let req: EchoRpcEnum =
             encode::deserialize(request).map_err(|e| WireError::ServerDeserialize(e.to_string()))?;
         // dispatch call the service
-        let mut buf = Vec::with_capacity(1024);
+        let mut buf = Vec::with_capacity(512);
         match req {
             EchoRpcEnum::hello((arg0,)) => {
                 let rsp = self.echo(arg0);
@@ -91,7 +90,6 @@ impl Service for Echo {
                 encode::serialize_into(&mut buf, &rsp, Infinite)
                     .map_err(|e| WireError::ServerSerialize(e.to_string()))?;
             }
-            _ => unreachable!("server dispatch unknown"),
         };
         // send the response
         Ok(buf)
