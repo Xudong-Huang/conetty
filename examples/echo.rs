@@ -8,7 +8,6 @@ extern crate serde_derive;
 use std::str;
 use bincode::serde as encode;
 use bincode::SizeLimit::Infinite;
-// use serde::{Serialize, Deserialize};
 use conetty::{Service, Error, WireError, UdpServer, UdpClient};
 
 struct Echo;
