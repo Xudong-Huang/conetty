@@ -3,11 +3,11 @@ extern crate coroutine;
 
 use std::str;
 use std::time::Duration;
-use conetty::{Service, WireError, TcpServer, TcpClient};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient};
 
 struct Echo;
 
-impl Service for Echo {
+impl Server for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         Ok(request.to_vec())
     }
@@ -30,7 +30,7 @@ fn echo() {
 fn tcp_timeout() {
     struct Echo;
 
-    impl Service for Echo {
+    impl Server for Echo {
         fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
             coroutine::sleep(Duration::from_secs(1));
             Ok(request.to_vec())

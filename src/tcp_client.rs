@@ -2,9 +2,10 @@ use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::io::{self, Write};
-use bufstream::BufStream;
+use Client;
 use io::Response;
 use errors::Error;
+use bufstream::BufStream;
 use bincode::serde as encode;
 use coroutine::net::TcpStream;
 use bincode::SizeLimit::Infinite;
@@ -37,10 +38,10 @@ impl TcpClient {
     pub fn set_timeout(&mut self, timeout: Duration) {
         self.sock.get_ref().set_read_timeout(Some(timeout)).unwrap();
     }
+}
 
-    /// call the server
-    /// the request must be something that is already encoded
-    pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
+impl Client for TcpClient {
+    fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;

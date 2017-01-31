@@ -5,11 +5,11 @@ extern crate env_logger;
 use std::str;
 use std::sync::Arc;
 use std::time::Duration;
-use conetty::{Service, WireError, TcpServer, MultiPlexClient};
+use conetty::{Server, Client, WireError, TcpServer, MultiPlexClient};
 
 struct Echo;
 
-impl Service for Echo {
+impl Server for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         // println!("req = {:?}", request);
         Ok(request.to_vec())

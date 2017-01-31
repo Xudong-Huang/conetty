@@ -23,7 +23,7 @@ pub use tcp_client::TcpClient;
 #[doc(hidden)]
 pub use multiplex_client::MultiPlexClient;
 #[doc(hidden)]
-pub use server::{Service, UdpServer, TcpServer};
+pub use server::{UdpServer, TcpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 
@@ -36,6 +36,26 @@ macro_rules! t {
         }
     })
 }
+
+/// rpc client trait
+pub trait Client {
+    /// call the server
+    /// the request must be something that is already encoded
+    /// the response is serialized into Vec<u8>
+    fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error>;
+}
+
+/// must impl this trait for your server
+pub trait Server: Send + Sync + Sized + 'static {
+    /// the service that would run in a coroutine
+    /// the real request should be deserialized from the input
+    /// the real response should be serialized into the raw vec
+    /// if deserialize/serialize error happened, return an Err(WireError)
+    /// application error should be encap in the raw vec
+    /// here passed in a self ref to impl stateful service if you want
+    fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError>;
+}
+
 
 /// Provides client impl.
 mod udp_client;

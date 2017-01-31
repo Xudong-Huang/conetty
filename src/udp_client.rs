@@ -2,6 +2,7 @@ use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
+use Client;
 use io::Response;
 use errors::Error;
 use bincode::serde as encode;
@@ -40,10 +41,10 @@ impl UdpClient {
     pub fn set_timeout(&mut self, timeout: Duration) {
         self.sock.set_read_timeout(Some(timeout)).unwrap();
     }
+}
 
-    /// call the server
-    /// the request must be something that is already encoded
-    pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
+impl Client for UdpClient {
+    fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;

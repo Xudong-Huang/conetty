@@ -4,11 +4,11 @@ extern crate env_logger;
 
 use std::str;
 use std::time::Duration;
-use conetty::{Service, WireError, UdpServer, UdpClient};
+use conetty::{Server, Client, WireError, UdpServer, UdpClient};
 
 struct Echo;
 
-impl Service for Echo {
+impl Server for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         println!("req = {:?}", request);
         coroutine::sleep(Duration::from_secs(1));

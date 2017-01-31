@@ -1,8 +1,8 @@
 use std::sync::Arc;
 use std::net::ToSocketAddrs;
 use std::io::{self, BufReader, BufWriter, Write};
+use Server;
 use coroutine;
-use errors::WireError;
 use comanaged::Manager;
 use coroutine::sync::Mutex;
 use io::{Request, Response};
@@ -11,19 +11,9 @@ use bincode::SizeLimit::Infinite;
 use coroutine::net::{UdpSocket, TcpListener};
 use bincode::serde::DeserializeError::IoError;
 
-/// must impl this trait for your server
-pub trait Service: Send + Sync + Sized + 'static {
-    /// the service that would run in a coroutine
-    /// the real request should be deserialized from the input
-    /// the real response should be serialized into the raw vec
-    /// if deserialize/serialize error happened, return an Err(WireError)
-    /// application error should be encap in the raw vec
-    /// here passed in a self ref to impl stateful service if you want
-    fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError>;
-}
 
 /// Provides a function for starting the service.
-pub trait UdpServer: Service {
+pub trait UdpServer: Server {
     /// Spawns the service, binding to the given address
     /// return a coroutine that you can cancel it when need to stop the service
     fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
@@ -73,7 +63,7 @@ pub trait UdpServer: Service {
 }
 
 /// Provides a function for starting the tcp service.
-pub trait TcpServer: Service {
+pub trait TcpServer: Server {
     /// Spawns the service, binding to the given address
     /// return a coroutine that you can cancel it when need to stop the service
     fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
@@ -130,5 +120,5 @@ pub trait TcpServer: Service {
     }
 }
 
-impl<T: Service> UdpServer for T {}
-impl<T: Service> TcpServer for T {}
+impl<T: Server> UdpServer for T {}
+impl<T: Server> TcpServer for T {}

@@ -4,6 +4,7 @@ use std::net::ToSocketAddrs;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::io::{self, BufReader, Write};
+use Client;
 use coroutine;
 use io::Response;
 use errors::Error;
@@ -147,10 +148,10 @@ impl MultiPlexClient {
     pub fn set_timeout(&mut self, timeout: Duration) {
         self.timeout = timeout;
     }
+}
 
-    /// call the server
-    /// the request must be something that is already encoded
-    pub fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
+impl Client for MultiPlexClient {
+    fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         info!("request id = {}", id);
 

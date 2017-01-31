@@ -4,11 +4,11 @@ extern crate conetty;
 extern crate coroutine;
 
 use test::Bencher;
-use conetty::{Service, WireError, TcpServer, TcpClient};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient};
 
 struct Echo;
 
-impl Service for Echo {
+impl Server for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         Ok(request.to_vec())
     }

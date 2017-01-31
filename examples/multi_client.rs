@@ -3,11 +3,11 @@ extern crate coroutine;
 extern crate env_logger;
 
 use std::str;
-use conetty::{Service, WireError, TcpServer, TcpClient};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient};
 
 struct Echo;
 
-impl Service for Echo {
+impl Server for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         // println!("req = {:?}", request);
         Ok(request.to_vec())

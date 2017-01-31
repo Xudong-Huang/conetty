@@ -1,5 +1,4 @@
 extern crate conetty;
-extern crate coroutine;
 extern crate env_logger;
 extern crate bincode;
 #[macro_use]
@@ -8,7 +7,7 @@ extern crate serde_derive;
 use std::str;
 use bincode::serde as encode;
 use bincode::SizeLimit::Infinite;
-use conetty::{Service, Error, WireError, UdpServer, UdpClient};
+use conetty::{Server, Client, Error, WireError, UdpServer, UdpClient};
 
 struct Echo;
 
@@ -38,12 +37,7 @@ enum EchoRpcEnum {
     add((u32, u32)),
 }
 
-trait EchoRpcClient {
-    fn echo(&self, data: String) -> Result<String, Error>;
-    fn add(&self, x: u32, y: u32) -> Result<u32, Error>;
-}
-
-impl EchoRpcClient for UdpClient {
+trait RpcClientExt: Client {
     fn echo(&self, arg0: String) -> Result<String, Error> {
         let mut buf = Vec::with_capacity(1024);
         // serialize the para
@@ -69,7 +63,9 @@ impl EchoRpcClient for UdpClient {
     }
 }
 
-impl Service for Echo {
+impl RpcClientExt for UdpClient {}
+
+impl Server for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         // deserialize the request
         let req: EchoRpcEnum =
