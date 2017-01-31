@@ -16,12 +16,17 @@ struct Echo;
 // rpc spec
 trait EchoRpc {
     fn echo(&self, data: String) -> String;
+    fn add(&self, x: u32, y: u32) -> u32;
 }
 
 // server implementation
 impl EchoRpc for Echo {
     fn echo(&self, data: String) -> String {
         data
+    }
+
+    fn add(&self, x: u32, y: u32) -> u32 {
+        x + y
     }
 }
 
@@ -31,18 +36,33 @@ impl EchoRpc for Echo {
 #[derive(Debug, Serialize, Deserialize)]
 enum EchoRpcEnum {
     __invalid(()),
-    hello(String),
+    hello((String,)),
+    add((u32, u32)),
 }
 
 trait EchoRpcClient {
     fn echo(&self, data: String) -> Result<String, Error>;
+    fn add(&self, x: u32, y: u32) -> Result<u32, Error>;
 }
 
 impl EchoRpcClient for UdpClient {
-    fn echo(&self, data: String) -> Result<String, Error> {
+    fn echo(&self, arg0: String) -> Result<String, Error> {
         let mut buf = Vec::with_capacity(1024);
         // serialize the para
-        encode::serialize_into(&mut buf, &data, Infinite)
+        let para = EchoRpcEnum::hello((arg0,));
+        encode::serialize_into(&mut buf, &para, Infinite)
+            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
+        // call the server
+        let ret = self.call_service(&buf)?;
+        // deserialized the response
+        encode::deserialize(&ret).map_err(|e| Error::ClientDeserialize(e.to_string()))
+    }
+
+    fn add(&self, arg0: u32, arg1: u32) -> Result<u32, Error> {
+        let mut buf = Vec::with_capacity(1024);
+        // serialize the para
+        let para = EchoRpcEnum::add((arg0, arg1));
+        encode::serialize_into(&mut buf, &para, Infinite)
             .map_err(|e| Error::ClientSerialize(e.to_string()))?;
         // call the server
         let ret = self.call_service(&buf)?;
@@ -54,14 +74,25 @@ impl EchoRpcClient for UdpClient {
 impl Service for Echo {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
         // deserialize the request
-        let data = encode::deserialize(request)
-            .map_err(|e| WireError::ServerDeserialize(e.to_string()))?;
-        // call the service
-        let ret = self.echo(data);
-        // serialize the result
+        let req: EchoRpcEnum =
+            encode::deserialize(request).map_err(|e| WireError::ServerDeserialize(e.to_string()))?;
+        // dispatch call the service
         let mut buf = Vec::with_capacity(1024);
-        encode::serialize_into(&mut buf, &ret, Infinite)
-            .map_err(|e| WireError::ServerSerialize(e.to_string()))?;
+        match req {
+            EchoRpcEnum::hello((arg0,)) => {
+                let rsp = self.echo(arg0);
+                // serialize the result
+                encode::serialize_into(&mut buf, &rsp, Infinite)
+                    .map_err(|e| WireError::ServerSerialize(e.to_string()))?;
+            }
+            EchoRpcEnum::add((arg0, arg1)) => {
+                let rsp = self.add(arg0, arg1);
+                // serialize the result
+                encode::serialize_into(&mut buf, &rsp, Infinite)
+                    .map_err(|e| WireError::ServerSerialize(e.to_string()))?;
+            }
+            _ => unreachable!("server dispatch unknown"),
+        };
         // send the response
         Ok(buf)
     }
@@ -78,6 +109,11 @@ fn main() {
     for i in 0..10 {
         let s = format!("Hello World! id={}", i);
         let data = client.echo(s);
+        println!("recv = {:?}", data);
+    }
+
+    for i in 0..10 {
+        let data = client.add(i, i);
         println!("recv = {:?}", data);
     }
 
