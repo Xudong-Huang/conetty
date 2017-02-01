@@ -3,7 +3,7 @@ use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use Client;
-use io::Response;
+use Response;
 use errors::Error;
 use bincode::serde as encode;
 use coroutine::net::UdpSocket;

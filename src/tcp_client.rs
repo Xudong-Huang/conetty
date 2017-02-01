@@ -3,7 +3,7 @@ use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::io::{self, Write};
 use Client;
-use io::Response;
+use Response;
 use errors::Error;
 use bufstream::BufStream;
 use bincode::serde as encode;

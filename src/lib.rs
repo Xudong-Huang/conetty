@@ -37,6 +37,20 @@ macro_rules! t {
     })
 }
 
+/// raw request/response wrapper
+#[derive(Serialize, Deserialize)]
+struct Request {
+    pub id: usize,
+    pub data: Vec<u8>,
+}
+
+/// raw request/response wrapper
+#[derive(Serialize, Deserialize)]
+struct Response {
+    pub id: usize,
+    pub data: Result<Vec<u8>, WireError>,
+}
+
 /// rpc client trait
 pub trait Client {
     /// call the server
@@ -65,5 +79,3 @@ mod multiplex_client;
 mod server;
 /// Provides a few different error types.
 mod errors;
-/// Provides request/response definition
-mod io;
