@@ -7,7 +7,7 @@ extern crate serde_derive;
 struct Echo;
 
 // rpc spec
-trait EchoRpc {
+trait EchoRpc: Send + Sync + 'static {
     fn echo(&self, data: String) -> String;
     fn add(&self, x: u32, y: u32) -> u32;
 }
@@ -76,7 +76,16 @@ impl EchoRpcClient {
     }
 }
 
-impl conetty::Server for Echo {
+struct RpcServer<T>(T);
+
+impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
+    type Target = T;
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T: EchoRpc> conetty::Server for RpcServer<T> {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, conetty::WireError> {
         use conetty::bincode::serde as encode;
         use conetty::bincode::SizeLimit::Infinite;
@@ -105,7 +114,7 @@ impl conetty::Server for Echo {
     }
 }
 
-impl Echo {
+impl<T: EchoRpc + 'static> RpcServer<T> {
     pub fn start<L: ::std::net::ToSocketAddrs>
         (self,
          addr: L)
@@ -119,7 +128,7 @@ fn main() {
     env_logger::init().unwrap();
 
     let addr = ("127.0.0.1", 4000);
-    let server = Echo.start(&addr).unwrap();
+    let server = RpcServer(Echo).start(&addr).unwrap();
     let mut client = EchoRpcClient::connect(addr).unwrap();
     client.set_timeout(::std::time::Duration::from_millis(100));
 

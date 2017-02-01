@@ -71,7 +71,7 @@ fn wait_rsp(req_map: &WaitReqMap,
     }
 }
 
-pub struct MultiPlexClient {
+pub struct MultiplexClient {
     // each request would have a unique id
     id: AtomicUsize,
     // default timeout is 10s
@@ -84,10 +84,10 @@ pub struct MultiPlexClient {
     listener: Option<coroutine::JoinHandle<()>>,
 }
 
-unsafe impl Send for MultiPlexClient {}
-unsafe impl Sync for MultiPlexClient {}
+unsafe impl Send for MultiplexClient {}
+unsafe impl Sync for MultiplexClient {}
 
-impl Drop for MultiPlexClient {
+impl Drop for MultiplexClient {
     fn drop(&mut self) {
         self.listener.take().map(|h| {
             unsafe { h.coroutine().cancel() };
@@ -96,9 +96,9 @@ impl Drop for MultiPlexClient {
     }
 }
 
-impl MultiPlexClient {
+impl MultiplexClient {
     /// connect to the server address
-    pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<MultiPlexClient> {
+    pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<MultiplexClient> {
         let sock = TcpStream::connect(addr)?;
         let req_map = Arc::new(WaitReqMap::new());
 
@@ -134,7 +134,7 @@ impl MultiPlexClient {
                 }
             })?;
 
-        Ok(MultiPlexClient {
+        Ok(MultiplexClient {
             id: AtomicUsize::new(0),
             timeout: Duration::from_secs(10),
             sock: Mutex::new(sock),
@@ -150,7 +150,7 @@ impl MultiPlexClient {
     }
 }
 
-impl Client for MultiPlexClient {
+impl Client for MultiplexClient {
     fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         info!("request id = {}", id);

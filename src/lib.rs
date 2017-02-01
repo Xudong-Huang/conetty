@@ -21,7 +21,7 @@ pub use udp_client::UdpClient;
 #[doc(hidden)]
 pub use tcp_client::TcpClient;
 #[doc(hidden)]
-pub use multiplex_client::MultiPlexClient;
+pub use multiplex_client::MultiplexClient;
 #[doc(hidden)]
 pub use server::{UdpServer, TcpServer};
 #[doc(hidden)]

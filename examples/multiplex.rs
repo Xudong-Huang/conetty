@@ -5,7 +5,7 @@ extern crate env_logger;
 use std::str;
 use std::sync::Arc;
 use std::time::Duration;
-use conetty::{Server, Client, WireError, TcpServer, MultiPlexClient};
+use conetty::{Server, Client, WireError, TcpServer, MultiplexClient};
 
 struct Echo;
 
@@ -22,7 +22,7 @@ fn main() {
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
-    let mut client = MultiPlexClient::connect(addr).unwrap();
+    let mut client = MultiplexClient::connect(addr).unwrap();
     client.set_timeout(Duration::from_secs(5));
 
     let client = Arc::new(client);
