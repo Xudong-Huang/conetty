@@ -1,6 +1,6 @@
 // #![deny(missing_docs)]
 #[doc(hidden)]
-extern crate coroutine;
+pub extern crate coroutine;
 #[macro_use]
 extern crate log;
 #[doc(hidden)]
@@ -8,7 +8,7 @@ extern crate serde;
 #[macro_use]
 extern crate serde_derive;
 #[doc(hidden)]
-extern crate bincode;
+pub extern crate bincode;
 #[doc(hidden)]
 extern crate comanaged;
 #[doc(hidden)]
