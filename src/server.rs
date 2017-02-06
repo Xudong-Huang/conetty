@@ -69,25 +69,35 @@ pub trait TcpServer: Server {
     /// return a coroutine that you can cancel it when need to stop the service
     fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
         let listener = TcpListener::bind(addr)?;
-        coroutine::Builder::new().name("UdpServer".to_owned()).spawn(move || {
+        coroutine::Builder::new().name("TcpServer".to_owned()).spawn(move || {
             let server = Arc::new(self);
             let manager = Manager::new();
             for stream in listener.incoming() {
                 let stream = t!(stream);
                 let server = server.clone();
                 manager.add(move |_| {
+                    let rs = stream.try_clone().expect("failed to clone stream");
                     // the read half of the stream
-                    let mut rs = BufReader::new(stream.try_clone()
-                        .expect("failed to clone stream"));
+                    let mut rs = BufReader::new(rs);
                     // the write half need to be protected by mutex
                     // for that coroutine io obj can't shared safely
                     let ws = Arc::new(Mutex::new(BufWriter::new(stream)));
                     loop {
-                        let req: Request = match encode::deserialize_from(&mut rs, Infinite) {
+                        let req: Box<Request> = match encode::deserialize_from(&mut rs, Infinite) {
                             Ok(r) => r,
-                            Err(IoError(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                                info!("connection is closed");
-                                break;
+                            Err(IoError(ref e)) => {
+                                match e.kind() {
+                                    io::ErrorKind::UnexpectedEof |
+                                    io::ErrorKind::ConnectionAborted |
+                                    io::ErrorKind::ConnectionReset => {
+                                        info!("connection is closed");
+                                        break;
+                                    }
+                                    kind => {
+                                        error!("io_err_kind = {:?}", kind);
+                                        continue;
+                                    }
+                                }
                             }
                             Err(ref e) => {
                                 error!("deserialize_from err={:?}", e);
@@ -103,8 +113,9 @@ pub trait TcpServer: Server {
                                 id: req.id,
                                 data: server.service(&req.data),
                             };
+                            drop(req);
 
-                            info!("send rsp: id={}", req.id);
+                            info!("send rsp: id={}", rsp.id);
                             // send the result back to client
                             let mut w = w_stream.lock().unwrap();
                             // serialize the result, ignore the error
@@ -112,7 +123,7 @@ pub trait TcpServer: Server {
                                 Ok(_) => {}
                                 Err(err) => return error!("tcp serialize failed, err={:?}", err),
                             };
-                            w.flush().unwrap();
+                            w.flush().unwrap_or_else(|e| error!("flush failed: err={:?}", e));
                         });
                     }
                 });
