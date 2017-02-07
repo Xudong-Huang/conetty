@@ -84,7 +84,7 @@ impl From<WireError> for Error {
 
 /// A serializable, server-supplied error.
 #[doc(hidden)]
-#[derive(Deserialize, Serialize, Clone, Debug)]
+#[derive(Debug)]
 pub enum WireError {
     /// Error in deserializing a client request.
     ServerDeserialize(String),

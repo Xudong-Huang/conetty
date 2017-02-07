@@ -2,15 +2,11 @@ use std::sync::Arc;
 use std::net::ToSocketAddrs;
 use std::io::{self, Cursor, BufReader, BufWriter, Write};
 use Server;
-use Response;
 use coroutine;
 use frame::Frame;
 use comanaged::Manager;
 use coroutine::sync::Mutex;
-use bincode::serde as encode;
-use bincode::SizeLimit::Infinite;
 use coroutine::net::{UdpSocket, TcpListener};
-// use bincode::serde::DeserializeError::IoError;
 
 
 /// Provides a function for starting the service.
@@ -37,14 +33,11 @@ pub trait UdpServer: Server {
                 let server = server.clone();
                 // let mutex = mutex.clone();
                 coroutine::spawn(move || {
-                    let rsp = Response {
-                        id: req.id,
-                        data: server.service(&req.data).unwrap(),
-                    };
-
+                    let rsp = server.service(&req.data);
+                    let mut data = Vec::with_capacity(1024);
                     // serialize the result, ignore the error
-                    let data = match encode::serialize(&rsp, Infinite) {
-                        Ok(data) => data,
+                    match Frame::encode_rsp(&mut data, req.id, rsp) {
+                        Ok(_) => {}
                         Err(err) => return error!("udp server serialize failed, err={:?}", err),
                     };
 
@@ -100,21 +93,18 @@ pub trait TcpServer: Server {
                         let w_stream = ws.clone();
                         let server = server.clone();
                         coroutine::spawn(move || {
-                            let rsp = Response {
-                                id: req.id,
-                                data: server.service(&req.data).unwrap(),
-                            };
+                            let id = req.id;
+                            let rsp = server.service(&req.data);
                             drop(req);
-
-                            info!("send rsp: id={}", rsp.id);
+                            info!("send rsp: id={}", id);
                             // send the result back to client
                             let mut w = w_stream.lock().unwrap();
                             // serialize the result, ignore the error
-                            match encode::serialize_into(&mut *w, &rsp, Infinite) {
+                            match Frame::encode_rsp(&mut *w, id, rsp) {
                                 Ok(_) => {}
                                 Err(err) => return error!("tcp serialize failed, err={:?}", err),
                             };
-                            w.flush().unwrap_or_else(|e| error!("flush failed: err={:?}", e));
+                            w.flush().unwrap_or_else(|e| error!("send rsp failed: err={:?}", e));
                         });
                     }
                 });

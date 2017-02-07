@@ -6,12 +6,6 @@ extern crate log;
 #[doc(hidden)]
 extern crate byteorder;
 #[doc(hidden)]
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-#[doc(hidden)]
-pub extern crate bincode;
-#[doc(hidden)]
 extern crate comanaged;
 #[doc(hidden)]
 extern crate bufstream;
@@ -39,13 +33,6 @@ macro_rules! t {
     })
 }
 
-/// raw request/response wrapper
-#[derive(Serialize, Deserialize)]
-struct Response {
-    pub id: u64,
-    pub data: Vec<u8>,
-}
-
 /// rpc client trait
 pub trait Client {
     /// call the server
@@ -67,6 +54,8 @@ pub trait Server: Send + Sync + Sized + 'static {
 
 /// raw frame protocol
 mod frame;
+/// response encode/decode
+mod response;
 /// Provides client impl.
 mod udp_client;
 mod tcp_client;

@@ -1,4 +1,5 @@
 extern crate conetty;
+extern crate bincode;
 extern crate env_logger;
 #[macro_use]
 extern crate serde_derive;
@@ -45,8 +46,8 @@ impl EchoRpcClient {
 
     pub fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
         use conetty::Client;
-        use conetty::bincode::serde as encode;
-        use conetty::bincode::SizeLimit::Infinite;
+        use bincode::serde as encode;
+        use bincode::SizeLimit::Infinite;
 
         let mut buf = Vec::with_capacity(1024);
         // serialize the para
@@ -61,8 +62,8 @@ impl EchoRpcClient {
 
     pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use conetty::Client;
-        use conetty::bincode::serde as encode;
-        use conetty::bincode::SizeLimit::Infinite;
+        use bincode::serde as encode;
+        use bincode::SizeLimit::Infinite;
 
         let mut buf = Vec::with_capacity(1024);
         // serialize the para
@@ -87,8 +88,8 @@ impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
 
 impl<T: EchoRpc> conetty::Server for RpcServer<T> {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, conetty::WireError> {
-        use conetty::bincode::serde as encode;
-        use conetty::bincode::SizeLimit::Infinite;
+        use bincode::serde as encode;
+        use bincode::SizeLimit::Infinite;
 
         // deserialize the request
         let req: EchoRpcEnum = encode::deserialize(request)

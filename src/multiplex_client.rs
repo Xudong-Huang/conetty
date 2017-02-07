@@ -2,17 +2,14 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::collections::HashMap;
+use std::io::{self, Cursor, BufReader, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::io::{self, BufReader, Write};
 use Client;
-use Response;
+use response;
 use coroutine;
 use frame::Frame;
 use errors::Error;
-use bincode::serde as encode;
 use coroutine::net::TcpStream;
-use bincode::SizeLimit::Infinite;
-use bincode::serde::DeserializeError::IoError;
 use coroutine::sync::{AtomicOption, Mutex, Blocker};
 
 struct WaitReq {
@@ -111,9 +108,9 @@ impl MultiplexClient {
         let listener = coroutine::Builder::new().name("MultiPlexClientListener".to_owned())
             .spawn(move || {
                 loop {
-                    let rsp: Response = match encode::deserialize_from(&mut r_stream, Infinite) {
+                    let rsp_frame = match Frame::decode_from(&mut r_stream) {
                         Ok(r) => r,
-                        Err(IoError(ref e)) => {
+                        Err(ref e) => {
                             if e.kind() == io::ErrorKind::UnexpectedEof {
                                 info!("tcp multiplex_client decode rsp: connection closed");
                             } else {
@@ -121,19 +118,16 @@ impl MultiplexClient {
                             }
                             break;
                         }
-                        Err(ref e) => {
-                            error!("deserialize_from err={:?}", e);
-                            continue;
-                        }
                     };
-                    info!("receive rsp, id={}", rsp.id);
+                    info!("receive rsp, id={}", rsp_frame.id);
+
+                    let rsp = response::decode_from(&mut Cursor::new(&rsp_frame.data));
+                    // let rsp = Ok(vec![0;10]);
 
                     // get the wait req
-                    req_map_1.get(rsp.id as usize).map(move |req| {
+                    req_map_1.get(rsp_frame.id as usize).map(move |req| {
                         // set the response
-                        // req.rsp = Some(rsp.data.map_err(Error::from));
-                        // req.rsp.swap(rsp.data.map_err(Error::from), Ordering::Release);
-                        req.rsp.swap(Ok(rsp.data), Ordering::Release);
+                        req.rsp.swap(rsp, Ordering::Release);
                         // wake up the blocker
                         req.blocker.unpark();
                     });

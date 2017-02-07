@@ -1,15 +1,13 @@
-use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
+use std::io::{self, Cursor};
 use std::net::ToSocketAddrs;
 use Client;
-use Response;
+use response;
 use frame::Frame;
 use errors::Error;
 use bufstream::BufStream;
-use bincode::serde as encode;
 use coroutine::net::TcpStream;
-use bincode::SizeLimit::Infinite;
 
 pub struct TcpClient {
     // each request would have a unique id
@@ -59,14 +57,15 @@ impl Client for TcpClient {
         // read the response
         loop {
             // deserialize the rsp
-            let rsp: Response = encode::deserialize_from(s, Infinite)
-                .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+            let rsp_frame =
+                Frame::decode_from(s).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+
+            let rsp = response::decode_from(&mut Cursor::new(&rsp_frame.data));
 
             // disgard the rsp that is is not belong to us
-            if rsp.id == id {
-                info!("get response id = {}", rsp.id);
-                // return rsp.data.map_err(Error::from);
-                return Ok(rsp.data);
+            if rsp_frame.id == id {
+                info!("get response id = {}", id);
+                return rsp;
             }
         }
     }
