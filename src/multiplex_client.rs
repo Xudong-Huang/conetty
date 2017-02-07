@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use std::collections::HashMap;
-use std::io::{self, Cursor, BufReader, Write};
+use std::io::{self, BufReader, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use Client;
 use response;
@@ -121,7 +121,7 @@ impl MultiplexClient {
                     };
                     info!("receive rsp, id={}", rsp_frame.id);
 
-                    let rsp = response::decode_from(&mut Cursor::new(&rsp_frame.data));
+                    let rsp = response::decode_from(&rsp_frame.data).map(|d| d.into());
                     // let rsp = Ok(vec![0;10]);
 
                     // get the wait req

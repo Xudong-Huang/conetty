@@ -1,6 +1,6 @@
+use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
-use std::io::{self, Cursor};
 use std::net::ToSocketAddrs;
 use Client;
 use response;
@@ -60,12 +60,12 @@ impl Client for TcpClient {
             let rsp_frame =
                 Frame::decode_from(s).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
-            let rsp = response::decode_from(&mut Cursor::new(&rsp_frame.data));
+            let rsp = response::decode_from(&rsp_frame.data);
 
             // disgard the rsp that is is not belong to us
             if rsp_frame.id == id {
                 info!("get response id = {}", id);
-                return rsp;
+                return rsp.map(|d| d.into());
             }
         }
     }
