@@ -7,6 +7,7 @@ use std::io::{self, BufReader, Write};
 use Client;
 use Response;
 use coroutine;
+use frame::Frame;
 use errors::Error;
 use bincode::serde as encode;
 use coroutine::net::TcpStream;
@@ -112,8 +113,12 @@ impl MultiplexClient {
                 loop {
                     let rsp: Response = match encode::deserialize_from(&mut r_stream, Infinite) {
                         Ok(r) => r,
-                        Err(IoError(ref e)) if e.kind() == io::ErrorKind::UnexpectedEof => {
-                            info!("connection is closed");
+                        Err(IoError(ref e)) => {
+                            if e.kind() == io::ErrorKind::UnexpectedEof {
+                                info!("tcp multiplex_client decode rsp: connection closed");
+                            } else {
+                                error!("tcp multiplex_client decode rsp: err = {:?}", e);
+                            }
                             break;
                         }
                         Err(ref e) => {
@@ -124,10 +129,11 @@ impl MultiplexClient {
                     info!("receive rsp, id={}", rsp.id);
 
                     // get the wait req
-                    req_map_1.get(rsp.id).map(move |req| {
+                    req_map_1.get(rsp.id as usize).map(move |req| {
                         // set the response
                         // req.rsp = Some(rsp.data.map_err(Error::from));
-                        req.rsp.swap(rsp.data.map_err(Error::from), Ordering::Release);
+                        // req.rsp.swap(rsp.data.map_err(Error::from), Ordering::Release);
+                        req.rsp.swap(Ok(rsp.data), Ordering::Release);
                         // wake up the blocker
                         req.blocker.unpark();
                     });
@@ -164,12 +170,8 @@ impl Client for MultiplexClient {
         self.req_map.add(id, &mut rw);
 
         let mut buf = Vec::with_capacity(1024);
-        // serialize the request id
-        encode::serialize_into(&mut buf, &id, Infinite)
-        .map_err(|e| Error::ClientSerialize(e.to_string()))?;
         // serialize the request
-        encode::serialize_into(&mut buf, &req, Infinite)
-        .map_err(|e| Error::ClientSerialize(e.to_string()))?;
+        Frame::encode_into(&mut buf, id as u64, req).map_err(Error::from)?;
 
         let mut g = self.sock.lock().unwrap();
         g.write(&buf).map_err(Error::from)?;

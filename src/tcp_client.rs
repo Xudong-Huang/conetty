@@ -1,9 +1,10 @@
+use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
-use std::io::{self, Write};
 use Client;
 use Response;
+use frame::Frame;
 use errors::Error;
 use bufstream::BufStream;
 use bincode::serde as encode;
@@ -12,7 +13,7 @@ use bincode::SizeLimit::Infinite;
 
 pub struct TcpClient {
     // each request would have a unique id
-    id: RefCell<usize>,
+    id: RefCell<u64>,
     // the connection
     sock: BufStream<TcpStream>,
 }
@@ -52,16 +53,8 @@ impl Client for TcpClient {
         let me = unsafe { &mut *(self as *const _ as *mut Self) };
         let s = &mut me.sock;
 
-        // serialize the request id
-        encode::serialize_into(s, &id, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
-
-        // serialize the request
-        encode::serialize_into(s, &req, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
-
-        // send the request
-        s.flush().unwrap();
+        // encode the request
+        Frame::encode_into(s, id, req).map_err(Error::from)?;
 
         // read the response
         loop {
@@ -72,7 +65,8 @@ impl Client for TcpClient {
             // disgard the rsp that is is not belong to us
             if rsp.id == id {
                 info!("get response id = {}", rsp.id);
-                return rsp.data.map_err(Error::from);
+                // return rsp.data.map_err(Error::from);
+                return Ok(rsp.data);
             }
         }
     }

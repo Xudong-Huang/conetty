@@ -4,14 +4,14 @@ use std::time::Duration;
 use std::net::ToSocketAddrs;
 use Client;
 use Response;
+use frame::Frame;
 use errors::Error;
 use bincode::serde as encode;
 use coroutine::net::UdpSocket;
-use bincode::SizeLimit::Infinite;
 
 pub struct UdpClient {
     // each request would have a unique id
-    id: RefCell<usize>,
+    id: RefCell<u64>,
     // the connection
     sock: UdpSocket,
     // send/recv buf
@@ -56,13 +56,7 @@ impl Client for UdpClient {
         let buf = &mut me.buf;
 
         buf.resize(0, 0);
-        // serialize the request id
-        encode::serialize_into(buf, &id, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
-
-        // serialize the request
-        encode::serialize_into(buf, &req, Infinite)
-            .map_err(|e| Error::ClientSerialize(e.to_string()))?;
+        Frame::encode_into(buf, id, req).map_err(Error::from)?;
 
         // send the data to server
         self.sock.send(&buf).map_err(Error::from)?;
@@ -79,7 +73,8 @@ impl Client for UdpClient {
             // disgard the rsp that is is not belong to us
             if rsp.id == id {
                 info!("get response id = {}", rsp.id);
-                return rsp.data.map_err(Error::from);
+                // return rsp.data.map_err(Error::from);
+                return Ok(rsp.data);
             }
         }
     }

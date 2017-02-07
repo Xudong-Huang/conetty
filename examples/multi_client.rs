@@ -23,18 +23,20 @@ fn main() {
 
     let mut vec = vec![];
     for i in 0..100 {
-        let j = coroutine::spawn(move || {
+        let handle = coroutine::spawn(move || {
             let client = TcpClient::connect(addr).unwrap();
             for j in 0..1000 {
                 let s = format!("Hello World! id={}, j={}", i, j);
                 match client.call_service(s.as_bytes()) {
-                    Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
+                    // Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
                     Err(err) => println!("recv err = {:?}", err),
+                    _ => {}
                 }
             }
+            // ::std::mem::forget(client);
             println!("thread done, id={}", i);
         });
-        vec.push(j);
+        vec.push(handle);
     }
 
     for (i, j) in vec.into_iter().enumerate() {

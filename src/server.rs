@@ -1,16 +1,16 @@
 use std::sync::Arc;
 use std::net::ToSocketAddrs;
-use std::io::{self, BufReader, BufWriter, Write};
+use std::io::{self, Cursor, BufReader, BufWriter, Write};
 use Server;
-use Request;
 use Response;
 use coroutine;
+use frame::Frame;
 use comanaged::Manager;
 use coroutine::sync::Mutex;
 use bincode::serde as encode;
 use bincode::SizeLimit::Infinite;
 use coroutine::net::{UdpSocket, TcpListener};
-use bincode::serde::DeserializeError::IoError;
+// use bincode::serde::DeserializeError::IoError;
 
 
 /// Provides a function for starting the service.
@@ -32,14 +32,14 @@ pub trait UdpServer: Server {
                 info!("recv_from: len={:?} addr={:?}", len, addr);
 
                 // if we failed to deserialize the request frame, just continue
-                let req: Request = t!(encode::deserialize(&buf));
+                let req = t!(Frame::decode_from(&mut Cursor::new(&buf)));
                 let sock = sock.clone();
                 let server = server.clone();
                 // let mutex = mutex.clone();
                 coroutine::spawn(move || {
                     let rsp = Response {
                         id: req.id,
-                        data: server.service(&req.data),
+                        data: server.service(&req.data).unwrap(),
                     };
 
                     // serialize the result, ignore the error
@@ -82,26 +82,17 @@ pub trait TcpServer: Server {
                     // the write half need to be protected by mutex
                     // for that coroutine io obj can't shared safely
                     let ws = Arc::new(Mutex::new(BufWriter::new(stream)));
+
                     loop {
-                        let req: Box<Request> = match encode::deserialize_from(&mut rs, Infinite) {
+                        let req = match Frame::decode_from(&mut rs) {
                             Ok(r) => r,
-                            Err(IoError(ref e)) => {
-                                match e.kind() {
-                                    io::ErrorKind::UnexpectedEof |
-                                    io::ErrorKind::ConnectionAborted |
-                                    io::ErrorKind::ConnectionReset => {
-                                        info!("connection is closed");
-                                        break;
-                                    }
-                                    kind => {
-                                        error!("io_err_kind = {:?}", kind);
-                                        continue;
-                                    }
-                                }
-                            }
                             Err(ref e) => {
-                                error!("deserialize_from err={:?}", e);
-                                continue;
+                                if e.kind() == io::ErrorKind::UnexpectedEof {
+                                    info!("tcp server decode req: connection closed");
+                                } else {
+                                    error!("tcp server decode req: err = {:?}", e);
+                                }
+                                break;
                             }
                         };
 
@@ -111,7 +102,7 @@ pub trait TcpServer: Server {
                         coroutine::spawn(move || {
                             let rsp = Response {
                                 id: req.id,
-                                data: server.service(&req.data),
+                                data: server.service(&req.data).unwrap(),
                             };
                             drop(req);
 

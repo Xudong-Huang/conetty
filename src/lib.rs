@@ -4,6 +4,8 @@ pub extern crate coroutine;
 #[macro_use]
 extern crate log;
 #[doc(hidden)]
+extern crate byteorder;
+#[doc(hidden)]
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
@@ -39,16 +41,9 @@ macro_rules! t {
 
 /// raw request/response wrapper
 #[derive(Serialize, Deserialize)]
-struct Request {
-    pub id: usize,
-    pub data: Vec<u8>,
-}
-
-/// raw request/response wrapper
-#[derive(Serialize, Deserialize)]
 struct Response {
-    pub id: usize,
-    pub data: Result<Vec<u8>, WireError>,
+    pub id: u64,
+    pub data: Vec<u8>,
 }
 
 /// rpc client trait
@@ -70,7 +65,8 @@ pub trait Server: Send + Sync + Sized + 'static {
     fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError>;
 }
 
-
+/// raw frame protocol
+mod frame;
 /// Provides client impl.
 mod udp_client;
 mod tcp_client;
