@@ -1,11 +1,12 @@
-use std::io::{self, Read, Write, Error, ErrorKind};
+use std::io::{self, Cursor, Read, Write, ErrorKind};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use WireError;
+use {Error, WireError};
 
 // max frame len
 const FRAME_MAX_LEN: u64 = 1024 * 1024;
 
 /// raw frame wrapper, low level protocol
+#[derive(Debug)]
 pub struct Frame {
     pub id: u64,
     pub data: Vec<u8>,
@@ -23,7 +24,7 @@ impl Frame {
         if len > FRAME_MAX_LEN {
             let s = format!("decode too big frame length. len={}", len);
             error!("{}", s);
-            return Err(Error::new(ErrorKind::InvalidInput, s));
+            return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
         let mut data = Vec::<u8>::new();
@@ -41,7 +42,7 @@ impl Frame {
         if len > FRAME_MAX_LEN {
             let s = format!("encode too big frame length. len={}", len);
             error!("{}", s);
-            return Err(Error::new(ErrorKind::InvalidInput, s));
+            return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
         w.write_u64::<BigEndian>(id)?;
@@ -75,7 +76,7 @@ impl Frame {
         if len1 > FRAME_MAX_LEN {
             let s = format!("encode too big frame length. len={}", len);
             error!("{}", s);
-            return Err(Error::new(ErrorKind::InvalidInput, s));
+            return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
         // write the id
@@ -93,5 +94,32 @@ impl Frame {
         // write the data into the writer
         w.write_all(data)?;
         w.flush()
+    }
+
+    /// decode a response from the frame, this would return the rsp raw bufer
+    /// you need to deserialized from it into the real type
+    pub fn decode_rsp(&self) -> Result<&[u8], Error> {
+        use Error::*;
+
+        let mut r = Cursor::new(&self.data);
+
+        let ty = r.read_u8()?;
+        // we don't need to check len here, frame is checked already
+        let len = r.read_u64::<BigEndian>()? as usize;
+
+        let buf = r.into_inner();
+        let data = &buf[9..len + 9];
+
+        // info!("decode response, ty={}, len={}", ty, len);
+        match ty {
+            0 => Ok(data),
+            1 => Err(ServerDeserialize(unsafe { String::from_utf8_unchecked(data.into()) })),
+            2 => Err(ServerSerialize(unsafe { String::from_utf8_unchecked(data.into()) })),
+            _ => {
+                let s = format!("invalid response type. ty={}", ty);
+                error!("{}", s);
+                Err(ClientDeserialize(s))
+            }
+        }
     }
 }

@@ -3,7 +3,6 @@ use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
 use Client;
-use response;
 use frame::Frame;
 use errors::Error;
 use bufstream::BufStream;
@@ -40,7 +39,7 @@ impl TcpClient {
 }
 
 impl Client for TcpClient {
-    fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
+    fn call_service(&self, req: &[u8]) -> Result<Frame, Error> {
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;
@@ -60,12 +59,10 @@ impl Client for TcpClient {
             let rsp_frame =
                 Frame::decode_from(s).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
-            let rsp = response::decode_from(&rsp_frame.data);
-
             // disgard the rsp that is is not belong to us
             if rsp_frame.id == id {
                 info!("get response id = {}", id);
-                return rsp.map(|d| d.into());
+                return Ok(rsp_frame);
             }
         }
     }

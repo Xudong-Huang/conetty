@@ -55,9 +55,10 @@ impl EchoRpcClient {
         encode::serialize_into(&mut buf, &para, Infinite)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
-        let ret = self.0.call_service(&buf)?;
+        let rsp_frame = self.0.call_service(&buf)?;
+        let rsp = rsp_frame.decode_rsp()?;
         // deserialized the response
-        encode::deserialize(&ret).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
+        encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
     }
 
     pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
@@ -71,9 +72,10 @@ impl EchoRpcClient {
         encode::serialize_into(&mut buf, &para, Infinite)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
-        let ret = self.0.call_service(&buf)?;
+        let rsp_frame = self.0.call_service(&buf)?;
+        let rsp = rsp_frame.decode_rsp()?;
         // deserialized the response
-        encode::deserialize(&ret).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
+        encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
     }
 }
 

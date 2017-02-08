@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use std::io::{self, BufReader, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use Client;
-use response;
 use coroutine;
 use frame::Frame;
 use errors::Error;
@@ -14,7 +13,7 @@ use coroutine::sync::{AtomicOption, Mutex, Blocker};
 
 struct WaitReq {
     blocker: Blocker,
-    rsp: AtomicOption<Result<Vec<u8>, Error>>,
+    rsp: AtomicOption<Frame>,
 }
 
 struct WaitReqMap {
@@ -45,13 +44,13 @@ fn wait_rsp(req_map: &WaitReqMap,
             id: usize,
             timeout: Duration,
             req: &mut WaitReq)
-            -> Result<Vec<u8>, Error> {
+            -> Result<Frame, Error> {
     use coroutine::ParkError;
 
     match req.blocker.park(Some(timeout)) {
         Ok(_) => {
             match req.rsp.take(Ordering::Acquire) {
-                Some(d) => d,
+                Some(frame) => Ok(frame),
                 None => panic!("unable to get the rsp, id={}", id),
             }
         }
@@ -121,13 +120,10 @@ impl MultiplexClient {
                     };
                     info!("receive rsp, id={}", rsp_frame.id);
 
-                    let rsp = response::decode_from(&rsp_frame.data).map(|d| d.into());
-                    // let rsp = Ok(vec![0;10]);
-
                     // get the wait req
                     req_map_1.get(rsp_frame.id as usize).map(move |req| {
                         // set the response
-                        req.rsp.swap(rsp, Ordering::Release);
+                        req.rsp.swap(rsp_frame, Ordering::Release);
                         // wake up the blocker
                         req.blocker.unpark();
                     });
@@ -151,7 +147,7 @@ impl MultiplexClient {
 }
 
 impl Client for MultiplexClient {
-    fn call_service(&self, req: &[u8]) -> Result<Vec<u8>, Error> {
+    fn call_service(&self, req: &[u8]) -> Result<Frame, Error> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         info!("request id = {}", id);
 

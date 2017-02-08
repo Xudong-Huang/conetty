@@ -19,8 +19,9 @@ fn echo() {
     let server = Echo.start(&addr).unwrap();
     let client = UdpClient::connect(addr).unwrap();
 
-    let rsp = client.call_service(&vec![5; 80]).unwrap();
-    assert_eq!(rsp, vec![5; 80]);
+    let rsp_frame = client.call_service(&vec![5; 16]).unwrap();
+    let rsp = rsp_frame.decode_rsp().unwrap();
+    assert_eq!(rsp, &[5u8; 16]);
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();

@@ -21,7 +21,8 @@ fn main() {
     for i in 0..10 {
         let s = format!("Hello World! id={}", i);
         let data = client.call_service(s.as_bytes()).unwrap();
-        println!("recv = {:?}", str::from_utf8(&data).unwrap());
+        let rsp = data.decode_rsp().unwrap();
+        println!("recv = {:?}", str::from_utf8(&rsp).unwrap());
     }
 
     unsafe { server.coroutine().cancel() };
