@@ -49,7 +49,7 @@ impl EchoRpcClient {
         use bincode::serde as encode;
         use bincode::SizeLimit::Infinite;
 
-        let mut req = conetty::FrameBuf::new();
+        let mut req = conetty::ReqBuf::new();
         // serialize the para
         let para = EchoRpcEnum::hello((arg0,));
         encode::serialize_into(&mut req, &para, Infinite)
@@ -66,7 +66,7 @@ impl EchoRpcClient {
         use bincode::serde as encode;
         use bincode::SizeLimit::Infinite;
 
-        let mut req = conetty::FrameBuf::new();
+        let mut req = conetty::ReqBuf::new();
         // serialize the para
         let para = EchoRpcEnum::add((arg0, arg1));
         encode::serialize_into(&mut req, &para, Infinite)

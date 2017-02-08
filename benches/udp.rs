@@ -5,7 +5,7 @@ extern crate coroutine;
 
 use std::io::Write;
 use test::Bencher;
-use conetty::{Server, Client, WireError, UdpServer, UdpClient, FrameBuf, RspBuf};
+use conetty::{Server, Client, WireError, UdpServer, UdpClient, ReqBuf, RspBuf};
 
 struct Echo;
 
@@ -22,7 +22,7 @@ fn udp_echo(b: &mut Bencher) {
     let client = UdpClient::connect(addr).unwrap();
 
     b.iter(|| {
-        let mut req = FrameBuf::new();
+        let mut req = ReqBuf::new();
         req.write(&vec![0; 100]).unwrap();
         let _rsp = client.call_service(req).unwrap();
     });

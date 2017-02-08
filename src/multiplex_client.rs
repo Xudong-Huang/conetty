@@ -7,7 +7,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use Client;
 use coroutine;
 use errors::Error;
-use frame::{Frame, FrameBuf};
+use frame::{Frame, ReqBuf};
 use coroutine::net::TcpStream;
 use coroutine::sync::{AtomicOption, Mutex, Blocker};
 
@@ -147,7 +147,7 @@ impl MultiplexClient {
 }
 
 impl Client for MultiplexClient {
-    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error> {
+    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         info!("request id = {}", id);
 

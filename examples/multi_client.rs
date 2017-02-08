@@ -4,7 +4,7 @@ extern crate env_logger;
 
 use std::str;
 use std::io::Write;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf, RspBuf};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
 
 struct Echo;
 
@@ -27,7 +27,7 @@ fn main() {
         let handle = coroutine::spawn(move || {
             let client = TcpClient::connect(addr).unwrap();
             for j in 0..1000 {
-                let mut req = FrameBuf::new();
+                let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();
                 match client.call_service(req) {
                     // Ok(frame) => {

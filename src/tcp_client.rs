@@ -4,7 +4,7 @@ use std::net::ToSocketAddrs;
 use std::io::{self, Write, BufReader};
 use Client;
 use errors::Error;
-use frame::{Frame, FrameBuf};
+use frame::{Frame, ReqBuf};
 use coroutine::net::TcpStream;
 
 pub struct TcpClient {
@@ -38,7 +38,7 @@ impl TcpClient {
 }
 
 impl Client for TcpClient {
-    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error> {
+    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;

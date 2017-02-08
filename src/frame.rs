@@ -66,17 +66,17 @@ impl Frame {
     }
 }
 
-/// raw frame buffer that can be serialized into
-pub struct FrameBuf(Cursor<Vec<u8>>);
+/// req frame buffer that can be serialized into
+pub struct ReqBuf(Cursor<Vec<u8>>);
 
-impl FrameBuf {
+impl ReqBuf {
     pub fn new() -> Self {
         let mut buf = Vec::with_capacity(1024);
         buf.resize(16, 0);
         let mut cursor = Cursor::new(buf);
         // leave enough space to write id and len
         cursor.set_position(16);
-        FrameBuf(cursor)
+        ReqBuf(cursor)
     }
 
     /// convert self into raw buf that can be send as a frame
@@ -98,7 +98,7 @@ impl FrameBuf {
     }
 }
 
-impl Write for FrameBuf {
+impl Write for ReqBuf {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.write(buf)
     }

@@ -4,7 +4,7 @@ extern crate coroutine;
 use std::str;
 use std::io::Write;
 use std::time::Duration;
-use conetty::{Server, Client, WireError, UdpServer, UdpClient, FrameBuf, RspBuf};
+use conetty::{Server, Client, WireError, UdpServer, UdpClient, ReqBuf, RspBuf};
 
 struct Echo;
 
@@ -20,7 +20,7 @@ fn echo() {
     let server = Echo.start(&addr).unwrap();
     let client = UdpClient::connect(addr).unwrap();
 
-    let mut req = FrameBuf::new();
+    let mut req = ReqBuf::new();
     req.write(&vec![5u8; 16]).unwrap();
     let rsp_frame = client.call_service(req).unwrap();
     let rsp = rsp_frame.decode_rsp().unwrap();
@@ -47,12 +47,12 @@ fn tcp_timeout() {
     let mut client = UdpClient::connect(addr).unwrap();
 
     client.set_timeout(Duration::from_millis(500));
-    let mut req = FrameBuf::new();
+    let mut req = ReqBuf::new();
     write!(req, "aaaaaa").unwrap();
     assert!(client.call_service(req).is_err());
 
     client.set_timeout(Duration::from_millis(1500));
-    let mut req = FrameBuf::new();
+    let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
     assert!(client.call_service(req).is_ok());
 
@@ -76,7 +76,7 @@ fn multi_client() {
         let h = coroutine::spawn(move || {
             let client = UdpClient::connect(addr).unwrap();
             for j in 0..10 {
-                let mut req = FrameBuf::new();
+                let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();
                 match client.call_service(req) {
                     Ok(_) => {

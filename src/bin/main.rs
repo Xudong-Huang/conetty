@@ -3,7 +3,7 @@ extern crate coroutine;
 
 use std::str;
 use std::io::Write;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf, RspBuf};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
 
 struct Echo;
 
@@ -20,7 +20,7 @@ fn main() {
     let client = TcpClient::connect(addr).unwrap();
 
     for i in 0..10 {
-        let mut buf = FrameBuf::new();
+        let mut buf = ReqBuf::new();
         buf.write_fmt(format_args!("Hello World! id={}", i)).unwrap();
         let data = client.call_service(buf).unwrap();
         let rsp = data.decode_rsp().unwrap();

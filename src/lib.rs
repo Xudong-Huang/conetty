@@ -21,7 +21,7 @@ pub use server::{UdpServer, TcpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 #[doc(hidden)]
-pub use frame::{Frame, FrameBuf, RspBuf};
+pub use frame::{Frame, ReqBuf, RspBuf};
 
 macro_rules! t {
     ($e: expr) => (match $e {
@@ -36,9 +36,9 @@ macro_rules! t {
 /// rpc client trait
 pub trait Client {
     /// call the server
-    /// the request must be encoded into the FrameBuf
+    /// the request must be encoded into the ReqBuf
     /// the response is the raw frame, you should parsing it into final response
-    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error>;
+    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error>;
 }
 
 /// must impl this trait for your server
