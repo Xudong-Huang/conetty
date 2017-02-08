@@ -164,7 +164,7 @@ impl Client for MultiplexClient {
         Frame::encode_into(&mut buf, id as u64, req).map_err(Error::from)?;
 
         let mut g = self.sock.lock().unwrap();
-        g.write(&buf).map_err(Error::from)?;
+        g.write_all(&buf).map_err(Error::from)?;
         drop(g);
 
         // wait for the rsp

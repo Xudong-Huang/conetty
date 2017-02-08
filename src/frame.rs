@@ -8,7 +8,9 @@ const FRAME_MAX_LEN: u64 = 1024 * 1024;
 /// raw frame wrapper, low level protocol
 #[derive(Debug)]
 pub struct Frame {
+    /// frame id, req and rsp has the same id
     pub id: u64,
+    /// payload data
     pub data: Vec<u8>,
 }
 
