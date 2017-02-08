@@ -89,31 +89,28 @@ impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
 }
 
 impl<T: EchoRpc> conetty::Server for RpcServer<T> {
-    fn service(&self, request: &[u8]) -> Result<Vec<u8>, conetty::WireError> {
+    fn service(&self, req: &[u8], rsp: &mut conetty::RspBuf) -> Result<(), conetty::WireError> {
         use bincode::serde as encode;
         use bincode::SizeLimit::Infinite;
 
         // deserialize the request
-        let req: EchoRpcEnum = encode::deserialize(request)
+        let req: EchoRpcEnum = encode::deserialize(req)
             .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         // dispatch call the service
-        let mut buf = Vec::with_capacity(512);
         match req {
             EchoRpcEnum::hello((arg0,)) => {
-                let rsp = self.echo(arg0);
+                let ret = self.echo(arg0);
                 // serialize the result
-                encode::serialize_into(&mut buf, &rsp, Infinite)
-                    .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))?;
+                encode::serialize_into(rsp, &ret, Infinite)
+                    .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
             }
             EchoRpcEnum::add((arg0, arg1)) => {
-                let rsp = self.add(arg0, arg1);
+                let ret = self.add(arg0, arg1);
                 // serialize the result
-                encode::serialize_into(&mut buf, &rsp, Infinite)
-                    .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))?;
+                encode::serialize_into(rsp, &ret, Infinite)
+                    .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
             }
-        };
-        // send the response
-        Ok(buf)
+        }
     }
 }
 

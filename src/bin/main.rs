@@ -2,17 +2,15 @@ extern crate conetty;
 extern crate coroutine;
 
 use std::str;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf};
-
-
-use std::io::{Write, Cursor};
+use std::io::Write;
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf, RspBuf};
 
 struct Echo;
 
 impl Server for Echo {
-    fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
-        println!("req = {:?}", request);
-        Ok(request.to_vec())
+    fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
+        println!("req = {:?}", req);
+        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
@@ -31,11 +29,4 @@ fn main() {
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();
-
-
-    let buf = vec![0; 10];
-    let mut writer = Cursor::new(buf);
-    writer.write("hello world!".as_bytes()).unwrap();
-    let buf = writer.into_inner();
-    println!("buf = {:?}\n cap={}", buf, buf.capacity());
 }

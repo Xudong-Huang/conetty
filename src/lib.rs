@@ -21,7 +21,7 @@ pub use server::{UdpServer, TcpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 #[doc(hidden)]
-pub use frame::{Frame, FrameBuf};
+pub use frame::{Frame, FrameBuf, RspBuf};
 
 macro_rules! t {
     ($e: expr) => (match $e {
@@ -45,11 +45,11 @@ pub trait Client {
 pub trait Server: Send + Sync + Sized + 'static {
     /// the service that would run in a coroutine
     /// the real request should be deserialized from the input
-    /// the real response should be serialized into the raw vec
+    /// the real response should be serialized into the RspBuf
     /// if deserialize/serialize error happened, return an Err(WireError)
-    /// application error should be encap in the raw vec
+    /// application error should be encap in the RspBuf
     /// here passed in a self ref to impl stateful service if you want
-    fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError>;
+    fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError>;
 }
 
 /// raw frame protocol

@@ -4,13 +4,13 @@ extern crate coroutine;
 use std::str;
 use std::io::Write;
 use std::time::Duration;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf, RspBuf};
 
 struct Echo;
 
 impl Server for Echo {
-    fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
-        Ok(request.to_vec())
+    fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
+        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
@@ -35,9 +35,9 @@ fn tcp_timeout() {
     struct Echo;
 
     impl Server for Echo {
-        fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
+        fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
             coroutine::sleep(Duration::from_secs(1));
-            Ok(request.to_vec())
+            rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
         }
     }
 

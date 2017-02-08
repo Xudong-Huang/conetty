@@ -38,48 +38,6 @@ impl Frame {
         })
     }
 
-
-    /// encode one rsp to the writer
-    pub fn encode_rsp<W: Write>(w: &mut W,
-                                id: u64,
-                                rsp: Result<Vec<u8>, WireError>)
-                                -> io::Result<()> {
-        let (ty, len, data) = match rsp {
-            Ok(ref d) => (0, d.len(), d.as_slice()),
-            Err(ref e) => {
-                match *e {
-                    WireError::ServerDeserialize(ref s) => (1, s.len(), s.as_bytes()),
-                    WireError::ServerSerialize(ref s) => (2, s.len(), s.as_bytes()),
-                }
-            }
-        };
-
-        // adjust len = len(data) + 1(ty) + 8(len)
-        let len1 = len as u64 + 9;
-
-        if len1 > FRAME_MAX_LEN {
-            let s = format!("encode too big frame length. len={}", len);
-            error!("{}", s);
-            return Err(io::Error::new(ErrorKind::InvalidInput, s));
-        }
-
-        // write the id
-        w.write_u64::<BigEndian>(id)?;
-        info!("encode id = {:?}", id);
-
-        // write the length
-        w.write_u64::<BigEndian>(len1)?;
-        info!("encode len = {:?}", len);
-
-        // write the type into the writer
-        w.write_u8(ty)?;
-        // write the len into the writer
-        w.write_u64::<BigEndian>(len as u64)?;
-        // write the data into the writer
-        w.write_all(data)?;
-        w.flush()
-    }
-
     /// decode a response from the frame, this would return the rsp raw bufer
     /// you need to deserialized from it into the real type
     pub fn decode_rsp(&self) -> Result<&[u8], Error> {
@@ -141,6 +99,71 @@ impl FrameBuf {
 }
 
 impl Write for FrameBuf {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
+    }
+}
+
+/// rsp frame buffer that can be serialized into
+pub struct RspBuf(Cursor<Vec<u8>>);
+
+impl RspBuf {
+    pub fn new() -> Self {
+        let mut buf = Vec::with_capacity(512);
+        // id + len + ty + len + data
+        buf.resize(25, 0);
+        let mut cursor = Cursor::new(buf);
+        // leave enough space to write id and len
+        cursor.set_position(25);
+        RspBuf(cursor)
+    }
+
+    /// convert self into raw buf that can be send as a frame
+    pub fn finish(self, id: u64, ret: Result<(), WireError>) -> Vec<u8> {
+        let mut cursor = self.0;
+        let dummy = vec![0; 0];
+
+        let (ty, len, data) = match ret {
+            Ok(_) => (0, cursor.get_ref().len() - 25, dummy.as_slice()),
+            Err(ref e) => {
+                match *e {
+                    WireError::ServerDeserialize(ref s) => (1, s.len(), s.as_bytes()),
+                    WireError::ServerSerialize(ref s) => (2, s.len(), s.as_bytes()),
+                }
+            }
+        };
+
+        let len = len as u64;
+        assert!(len < FRAME_MAX_LEN);
+
+        // write from start
+        cursor.set_position(0);
+        cursor.write_u64::<BigEndian>(id).unwrap();
+        info!("encode id = {:?}", id);
+
+        // adjust the data length
+        cursor.write_u64::<BigEndian>(len + 9).unwrap();
+        info!("encode len = {:?}", len);
+
+        // write the type
+        cursor.write_u8(ty).unwrap();
+        // write the len
+        cursor.write_u64::<BigEndian>(len).unwrap();
+        // write the data into the writer
+        if ty != 0 {
+            cursor.get_mut().resize(len as usize + 25, 0);
+            cursor.write_all(data).unwrap();
+        }
+
+        cursor.into_inner()
+    }
+}
+
+impl Write for RspBuf {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
         self.0.write(buf)
     }

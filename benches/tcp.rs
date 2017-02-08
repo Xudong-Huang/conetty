@@ -5,13 +5,13 @@ extern crate coroutine;
 
 use std::io::Write;
 use test::Bencher;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf, RspBuf};
 
 struct Echo;
 
 impl Server for Echo {
-    fn service(&self, request: &[u8]) -> Result<Vec<u8>, WireError> {
-        Ok(request.to_vec())
+    fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
+        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
