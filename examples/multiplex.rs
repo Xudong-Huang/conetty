@@ -3,9 +3,10 @@ extern crate coroutine;
 extern crate env_logger;
 
 use std::str;
+use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
-use conetty::{Server, Client, WireError, TcpServer, MultiplexClient};
+use conetty::{Server, Client, WireError, TcpServer, MultiplexClient, FrameBuf};
 
 struct Echo;
 
@@ -31,9 +32,13 @@ fn main() {
         let client = client.clone();
         let j = coroutine::spawn(move || {
             for j in 0..1000 {
-                let s = format!("Hello World! id={}, j={}", i, j);
-                match client.call_service(s.as_bytes()) {
-                    // Ok(data) => println!("recv = {:?}", str::from_utf8(&data).unwrap()),
+                let mut req = FrameBuf::new();
+                write!(req, "Hello World! id={}, j={}", i, j).unwrap();
+                match client.call_service(req) {
+                    // Ok(frame) => {
+                    //     let rsp = frame.decode_rsp().unwrap();
+                    //     println!("recv = {:?}", str::from_utf8(rsp).unwrap());
+                    // }
                     Err(err) => println!("recv err = {:?}", err),
                     _ => {}
                 }

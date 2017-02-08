@@ -6,8 +6,8 @@ use std::io::{self, BufReader, Write};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use Client;
 use coroutine;
-use frame::Frame;
 use errors::Error;
+use frame::{Frame, FrameBuf};
 use coroutine::net::TcpStream;
 use coroutine::sync::{AtomicOption, Mutex, Blocker};
 
@@ -147,7 +147,7 @@ impl MultiplexClient {
 }
 
 impl Client for MultiplexClient {
-    fn call_service(&self, req: &[u8]) -> Result<Frame, Error> {
+    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error> {
         let id = self.id.fetch_add(1, Ordering::Relaxed);
         info!("request id = {}", id);
 
@@ -159,9 +159,8 @@ impl Client for MultiplexClient {
         };
         self.req_map.add(id, &mut rw);
 
-        let mut buf = Vec::with_capacity(1024);
-        // serialize the request
-        Frame::encode_into(&mut buf, id as u64, req).map_err(Error::from)?;
+        // send the request
+        let buf = req.finish(id as u64);
 
         let mut g = self.sock.lock().unwrap();
         g.write_all(&buf).map_err(Error::from)?;

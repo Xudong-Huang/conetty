@@ -3,8 +3,9 @@ extern crate coroutine;
 extern crate env_logger;
 
 use std::str;
+use std::io::Write;
 use std::time::Duration;
-use conetty::{Server, Client, WireError, UdpServer, UdpClient};
+use conetty::{Server, Client, WireError, UdpServer, UdpClient, FrameBuf};
 
 struct Echo;
 
@@ -24,10 +25,14 @@ fn main() {
     let mut client = UdpClient::connect(addr).unwrap();
 
     client.set_timeout(Duration::from_millis(500));
-    println!("rsp = {:?}", client.call_service("aaaaaa".as_bytes()));
+    let mut req = FrameBuf::new();
+    write!(req, "aaaaaa").unwrap();
+    println!("rsp = {:?}", client.call_service(req));
 
     client.set_timeout(Duration::from_millis(1500));
-    println!("rsp = {:?}", client.call_service("bbbbbb".as_bytes()));
+    let mut req = FrameBuf::new();
+    write!(req, "bbbbbb").unwrap();
+    println!("rsp = {:?}", client.call_service(req));
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();

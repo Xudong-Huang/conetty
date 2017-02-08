@@ -1,18 +1,17 @@
-use std::io;
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
+use std::io::{self, Write, BufReader};
 use Client;
-use frame::Frame;
 use errors::Error;
-use bufstream::BufStream;
+use frame::{Frame, FrameBuf};
 use coroutine::net::TcpStream;
 
 pub struct TcpClient {
     // each request would have a unique id
     id: RefCell<u64>,
     // the connection
-    sock: BufStream<TcpStream>,
+    sock: BufReader<TcpStream>,
 }
 
 // the TcpClient is Send but not Sync
@@ -27,7 +26,7 @@ impl TcpClient {
 
         Ok(TcpClient {
             id: RefCell::new(0),
-            sock: BufStream::with_capacities(1024, 1024, sock),
+            sock: BufReader::with_capacity(1024, sock),
         })
     }
 
@@ -39,7 +38,7 @@ impl TcpClient {
 }
 
 impl Client for TcpClient {
-    fn call_service(&self, req: &[u8]) -> Result<Frame, Error> {
+    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error> {
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;
@@ -51,7 +50,7 @@ impl Client for TcpClient {
         let s = &mut me.sock;
 
         // encode the request
-        Frame::encode_into(s, id, req).map_err(Error::from)?;
+        s.get_ref().write_all(&(req.finish(id)))?;
 
         // read the response
         loop {

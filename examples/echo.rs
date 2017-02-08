@@ -49,13 +49,13 @@ impl EchoRpcClient {
         use bincode::serde as encode;
         use bincode::SizeLimit::Infinite;
 
-        let mut buf = Vec::with_capacity(1024);
+        let mut req = conetty::FrameBuf::new();
         // serialize the para
         let para = EchoRpcEnum::hello((arg0,));
-        encode::serialize_into(&mut buf, &para, Infinite)
+        encode::serialize_into(&mut req, &para, Infinite)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
-        let rsp_frame = self.0.call_service(&buf)?;
+        let rsp_frame = self.0.call_service(req)?;
         let rsp = rsp_frame.decode_rsp()?;
         // deserialized the response
         encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
@@ -66,13 +66,13 @@ impl EchoRpcClient {
         use bincode::serde as encode;
         use bincode::SizeLimit::Infinite;
 
-        let mut buf = Vec::with_capacity(1024);
+        let mut req = conetty::FrameBuf::new();
         // serialize the para
         let para = EchoRpcEnum::add((arg0, arg1));
-        encode::serialize_into(&mut buf, &para, Infinite)
+        encode::serialize_into(&mut req, &para, Infinite)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
-        let rsp_frame = self.0.call_service(&buf)?;
+        let rsp_frame = self.0.call_service(req)?;
         let rsp = rsp_frame.decode_rsp()?;
         // deserialized the response
         encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))

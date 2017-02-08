@@ -2,7 +2,10 @@ extern crate conetty;
 extern crate coroutine;
 
 use std::str;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf};
+
+
+use std::io::{Write, Cursor};
 
 struct Echo;
 
@@ -19,12 +22,20 @@ fn main() {
     let client = TcpClient::connect(addr).unwrap();
 
     for i in 0..10 {
-        let s = format!("Hello World! id={}", i);
-        let data = client.call_service(s.as_bytes()).unwrap();
+        let mut buf = FrameBuf::new();
+        buf.write_fmt(format_args!("Hello World! id={}", i)).unwrap();
+        let data = client.call_service(buf).unwrap();
         let rsp = data.decode_rsp().unwrap();
         println!("recv = {:?}", str::from_utf8(&rsp).unwrap());
     }
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();
+
+
+    let buf = vec![0; 10];
+    let mut writer = Cursor::new(buf);
+    writer.write("hello world!".as_bytes()).unwrap();
+    let buf = writer.into_inner();
+    println!("buf = {:?}\n cap={}", buf, buf.capacity());
 }

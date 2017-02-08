@@ -2,8 +2,9 @@ extern crate conetty;
 extern crate coroutine;
 
 use std::str;
+use std::io::Write;
 use std::time::Duration;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient};
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, FrameBuf};
 
 struct Echo;
 
@@ -19,7 +20,9 @@ fn echo() {
     let server = Echo.start(&addr).unwrap();
     let client = TcpClient::connect(addr).unwrap();
 
-    let rsp_frame = client.call_service(&vec![5; 16]).unwrap();
+    let mut req = FrameBuf::new();
+    req.write(&vec![5u8; 16]).unwrap();
+    let rsp_frame = client.call_service(req).unwrap();
     let rsp = rsp_frame.decode_rsp().unwrap();
     assert_eq!(rsp, &[5u8; 16]);
 
@@ -44,10 +47,14 @@ fn tcp_timeout() {
     let mut client = TcpClient::connect(addr).unwrap();
 
     client.set_timeout(Duration::from_millis(500));
-    assert!(client.call_service("aaaaaa".as_bytes()).is_err());
+    let mut req = FrameBuf::new();
+    write!(req, "aaaaaa").unwrap();
+    assert!(client.call_service(req).is_err());
 
     client.set_timeout(Duration::from_millis(1500));
-    assert!(client.call_service("bbbbbb".as_bytes()).is_ok());
+    let mut req = FrameBuf::new();
+    write!(req, "bbbbbb").unwrap();
+    assert!(client.call_service(req).is_ok());
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();
@@ -69,8 +76,9 @@ fn multi_client() {
         let h = coroutine::spawn(move || {
             let client = TcpClient::connect(addr).unwrap();
             for j in 0..10 {
-                let s = format!("Hello World! id={}, j={}", i, j);
-                match client.call_service(s.as_bytes()) {
+                let mut req = FrameBuf::new();
+                write!(req, "Hello World! id={}, j={}", i, j).unwrap();
+                match client.call_service(req) {
                     Ok(_) => {
                         count_ref.fetch_add(1, Ordering::Relaxed);
                     }

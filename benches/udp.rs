@@ -3,8 +3,9 @@ extern crate test;
 extern crate conetty;
 extern crate coroutine;
 
+use std::io::Write;
 use test::Bencher;
-use conetty::{Server, Client, WireError, UdpServer, UdpClient};
+use conetty::{Server, Client, WireError, UdpServer, UdpClient, FrameBuf};
 
 struct Echo;
 
@@ -21,7 +22,9 @@ fn udp_echo(b: &mut Bencher) {
     let client = UdpClient::connect(addr).unwrap();
 
     b.iter(|| {
-        let _rsp = client.call_service(&vec![0; 100]).unwrap();
+        let mut req = FrameBuf::new();
+        req.write(&vec![0; 100]).unwrap();
+        let _rsp = client.call_service(req).unwrap();
     });
 
     unsafe { server.coroutine().cancel() };

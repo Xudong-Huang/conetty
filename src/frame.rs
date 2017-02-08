@@ -38,24 +38,6 @@ impl Frame {
         })
     }
 
-    /// encode one frame into the writer
-    pub fn encode_into<W: Write>(w: &mut W, id: u64, data: &[u8]) -> io::Result<()> {
-        let len = data.len() as u64;
-        if len > FRAME_MAX_LEN {
-            let s = format!("encode too big frame length. len={}", len);
-            error!("{}", s);
-            return Err(io::Error::new(ErrorKind::InvalidInput, s));
-        }
-
-        w.write_u64::<BigEndian>(id)?;
-        info!("encode id = {:?}", id);
-
-        w.write_u64::<BigEndian>(len)?;
-        info!("encode len = {:?}", len);
-
-        w.write_all(data)?;
-        w.flush()
-    }
 
     /// encode one rsp to the writer
     pub fn encode_rsp<W: Write>(w: &mut W,
@@ -123,5 +105,47 @@ impl Frame {
                 Err(ClientDeserialize(s))
             }
         }
+    }
+}
+
+/// raw frame buffer that can be serialized into
+pub struct FrameBuf(Cursor<Vec<u8>>);
+
+impl FrameBuf {
+    pub fn new() -> Self {
+        let mut buf = Vec::with_capacity(1024);
+        buf.resize(16, 0);
+        let mut cursor = Cursor::new(buf);
+        // leave enough space to write id and len
+        cursor.set_position(16);
+        FrameBuf(cursor)
+    }
+
+    /// convert self into raw buf that can be send as a frame
+    pub fn finish(self, id: u64) -> Vec<u8> {
+        let mut cursor = self.0;
+        let len = cursor.get_ref().len() as u64;
+        assert!(len <= FRAME_MAX_LEN);
+
+        // write from start
+        cursor.set_position(0);
+        cursor.write_u64::<BigEndian>(id).unwrap();
+        info!("encode id = {:?}", id);
+
+        // adjust the data length
+        cursor.write_u64::<BigEndian>(len - 16).unwrap();
+        info!("encode len = {:?}", len);
+
+        cursor.into_inner()
+    }
+}
+
+impl Write for FrameBuf {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        self.0.write(buf)
+    }
+
+    fn flush(&mut self) -> io::Result<()> {
+        Ok(())
     }
 }

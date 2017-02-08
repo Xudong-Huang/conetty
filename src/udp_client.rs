@@ -2,9 +2,10 @@ use std::cell::RefCell;
 use std::time::Duration;
 use std::io::{self, Cursor};
 use std::net::ToSocketAddrs;
+use std::cell::UnsafeCell;
 use Client;
-use frame::Frame;
 use errors::Error;
+use frame::{Frame, FrameBuf};
 use coroutine::net::UdpSocket;
 
 pub struct UdpClient {
@@ -13,7 +14,7 @@ pub struct UdpClient {
     // the connection
     sock: UdpSocket,
     // send/recv buf
-    buf: Vec<u8>,
+    buf: UnsafeCell<Vec<u8>>,
 }
 
 // the UdpClient is Send but not Sync
@@ -30,7 +31,7 @@ impl UdpClient {
         Ok(UdpClient {
             id: RefCell::new(0),
             sock: sock,
-            buf: Vec::with_capacity(1024),
+            buf: UnsafeCell::new(vec![0; 1024]),
         })
     }
 
@@ -42,7 +43,7 @@ impl UdpClient {
 }
 
 impl Client for UdpClient {
-    fn call_service(&self, req: &[u8]) -> Result<Frame, Error> {
+    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error> {
         let id = {
             let mut id = self.id.borrow_mut();
             *id += 1;
@@ -50,17 +51,11 @@ impl Client for UdpClient {
         };
         info!("request id = {}", id);
 
-        let me = unsafe { &mut *(self as *const _ as *mut Self) };
-        let buf = &mut me.buf;
-
-        buf.resize(0, 0);
-        Frame::encode_into(buf, id, req).map_err(Error::from)?;
-
         // send the data to server
-        self.sock.send(&buf).map_err(Error::from)?;
+        self.sock.send(&(req.finish(id))).map_err(Error::from)?;
 
+        let buf = unsafe { &mut *self.buf.get() };
         // read the response
-        buf.resize(1024, 0);
         loop {
             self.sock.recv(buf).map_err(Error::from)?;
 

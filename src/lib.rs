@@ -7,8 +7,6 @@ extern crate log;
 extern crate byteorder;
 #[doc(hidden)]
 extern crate comanaged;
-#[doc(hidden)]
-extern crate bufstream;
 
 pub use errors::Error;
 
@@ -23,7 +21,7 @@ pub use server::{UdpServer, TcpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 #[doc(hidden)]
-pub use frame::Frame;
+pub use frame::{Frame, FrameBuf};
 
 macro_rules! t {
     ($e: expr) => (match $e {
@@ -38,9 +36,9 @@ macro_rules! t {
 /// rpc client trait
 pub trait Client {
     /// call the server
-    /// the request must be something that is already encoded
-    /// the response is the raw frame, you should parsing it into result
-    fn call_service(&self, req: &[u8]) -> Result<Frame, Error>;
+    /// the request must be encoded into the FrameBuf
+    /// the response is the raw frame, you should parsing it into final response
+    fn call_service(&self, req: FrameBuf) -> Result<Frame, Error>;
 }
 
 /// must impl this trait for your server
