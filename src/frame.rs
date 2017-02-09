@@ -2,6 +2,16 @@ use std::io::{self, Cursor, Read, Write, ErrorKind};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use {Error, WireError};
 
+
+// Frame layout
+// id(u64) + len(u64) + payload([u8; len])
+
+// req frame layout
+// id(u64) + len(u64) + req_data([u8; len])
+
+// rsp frame layout
+// id(u64) + len(u64) + ty(u8) + len1(u64) + rsp_data([u8; len1])
+
 // max frame len
 const FRAME_MAX_LEN: u64 = 1024 * 1024;
 
@@ -11,7 +21,7 @@ pub struct Frame {
     /// frame id, req and rsp has the same id
     pub id: u64,
     /// payload data
-    pub data: Vec<u8>,
+    data: Vec<u8>,
 }
 
 impl Frame {
@@ -20,7 +30,7 @@ impl Frame {
         let id = r.read_u64::<BigEndian>()?;
         info!("decode id = {:?}", id);
 
-        let len = r.read_u64::<BigEndian>()?;
+        let len = r.read_u64::<BigEndian>()? + 16;
         info!("decode len = {:?}", len);
 
         if len > FRAME_MAX_LEN {
@@ -29,13 +39,38 @@ impl Frame {
             return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
-        let mut data = Vec::<u8>::new();
-        data.resize(len as usize, 0);
-        r.read_exact(&mut data)?;
+        let mut data = vec![0; len as usize];
+        r.read_exact(&mut data[16..])?;
+
+        // blow can be skipped, we don't need them in the buffer
+        let mut cursor = Cursor::new(data);
+        cursor.write_u64::<BigEndian>(id).unwrap();
+        cursor.write_u64::<BigEndian>(len - 16).unwrap();
+        let data = cursor.into_inner();
+
         Ok(Frame {
             id: id,
             data: data,
         })
+    }
+
+    /// convert self into raw buf that can be re-send as a frame
+    #[allow(dead_code)]
+    pub fn finish(self, id: u64) -> Vec<u8> {
+        let mut cursor = Cursor::new(self.data);
+
+        // write from start
+        cursor.write_u64::<BigEndian>(id).unwrap();
+        info!("re-encode id = {:?}", id);
+
+        cursor.into_inner()
+    }
+
+    /// decode a request from the frame, this would return the req raw bufer
+    /// you need to deserialized from it into the real type
+    pub fn decode_req(&self) -> &[u8] {
+        // skip the frame head
+        &self.data[16..]
     }
 
     /// decode a response from the frame, this would return the rsp raw bufer
@@ -44,13 +79,15 @@ impl Frame {
         use Error::*;
 
         let mut r = Cursor::new(&self.data);
+        // skip the frame head
+        r.set_position(16);
 
         let ty = r.read_u8()?;
         // we don't need to check len here, frame is checked already
         let len = r.read_u64::<BigEndian>()? as usize;
 
         let buf = r.into_inner();
-        let data = &buf[9..len + 9];
+        let data = &buf[25..len + 25];
 
         // info!("decode response, ty={}, len={}", ty, len);
         match ty {
@@ -71,7 +108,7 @@ pub struct ReqBuf(Cursor<Vec<u8>>);
 
 impl ReqBuf {
     pub fn new() -> Self {
-        let mut buf = Vec::with_capacity(1024);
+        let mut buf = Vec::with_capacity(128);
         buf.resize(16, 0);
         let mut cursor = Cursor::new(buf);
         // leave enough space to write id and len
@@ -113,7 +150,7 @@ pub struct RspBuf(Cursor<Vec<u8>>);
 
 impl RspBuf {
     pub fn new() -> Self {
-        let mut buf = Vec::with_capacity(512);
+        let mut buf = Vec::with_capacity(64);
         // id + len + ty + len + data
         buf.resize(25, 0);
         let mut cursor = Cursor::new(buf);

@@ -34,7 +34,7 @@ pub trait UdpServer: Server {
                 // let mutex = mutex.clone();
                 coroutine::spawn(move || {
                     let mut rsp = RspBuf::new();
-                    let ret = server.service(&req.data, &mut rsp);
+                    let ret = server.service(req.decode_req(), &mut rsp);
                     let data = rsp.finish(req.id, ret);
 
                     info!("send_to: len={:?} addr={:?}", data.len(), addr);
@@ -90,7 +90,7 @@ pub trait TcpServer: Server {
                         let server = server.clone();
                         coroutine::spawn(move || {
                             let mut rsp = RspBuf::new();
-                            let ret = server.service(&req.data, &mut rsp);
+                            let ret = server.service(req.decode_req(), &mut rsp);
                             let data = rsp.finish(req.id, ret);
 
                             info!("send rsp: id={}", req.id);

@@ -24,4 +24,3 @@ bincode = "1.0.0-alpha1"
 
 [profile.release]
 opt-level=3
-debug=true
