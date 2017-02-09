@@ -28,6 +28,10 @@ pub enum Error {
     ///
     /// You can set the default timeout value in the client instance
     Timeout,
+    /// The server returns an status error due to different reasons.
+    ///
+    /// Typically this indicates that the server is not healthy
+    Status(u64),
 }
 
 impl fmt::Display for Error {
@@ -37,6 +41,7 @@ impl fmt::Display for Error {
             Error::ClientSerialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
             Error::ServerDeserialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
             Error::ServerSerialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
+            Error::Status(e) => write!(f, r#"{}: "{}""#, self.description(), e),
             Error::Timeout => write!(f, r#"{}"#, self.description()),
             Error::Io(ref e) => fmt::Display::fmt(e, f),
         }
@@ -50,6 +55,7 @@ impl StdError for Error {
             Error::ClientSerialize(_) => "The client failed to serialize the request.",
             Error::ServerDeserialize(_) => "The server failed to deserialize the request.",
             Error::ServerSerialize(_) => "The server failed to serialize the response.",
+            Error::Status(_) => "The server returns an error code.",
             Error::Timeout => "The client get the server reply response timeout.",
             Error::Io(ref e) => e.description(),
         }
@@ -61,6 +67,7 @@ impl StdError for Error {
             Error::ClientSerialize(_) |
             Error::ServerDeserialize(_) |
             Error::ServerSerialize(_) |
+            Error::Status(_) |
             Error::Timeout => None,
             Error::Io(ref e) => e.cause(),
         }
@@ -78,6 +85,7 @@ impl From<WireError> for Error {
         match err {
             WireError::ServerDeserialize(s) => Error::ServerDeserialize(s),
             WireError::ServerSerialize(s) => Error::ServerSerialize(s),
+            WireError::Status(s) => Error::Status(s),
         }
     }
 }
@@ -90,4 +98,6 @@ pub enum WireError {
     ServerDeserialize(String),
     /// Error in serializing server response.
     ServerSerialize(String),
+    /// Server Status
+    Status(u64),
 }

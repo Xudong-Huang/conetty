@@ -10,11 +10,12 @@ use conetty::{Server, Client, WireError, UdpServer, UdpClient, ReqBuf, RspBuf};
 struct Echo;
 
 impl Server for Echo {
-    fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
+    fn service(&self, req: &[u8], _rsp: &mut RspBuf) -> Result<(), WireError> {
         println!("req = {:?}", req);
         coroutine::sleep(Duration::from_secs(1));
-        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
+        // rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
         // Err(WireError::ServerDeserialize("asfasfdasd".into()))
+        Err(WireError::Status(250))
     }
 }
 
@@ -33,7 +34,10 @@ fn main() {
     client.set_timeout(Duration::from_millis(1500));
     let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
-    println!("rsp = {:?}", client.call_service(req));
+    let rsp_frame = client.call_service(req).unwrap();
+    println!("rsp_frame = {:?}", rsp_frame);
+    let rsp = rsp_frame.decode_rsp();
+    println!("rsp = {:?}", rsp);
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();
