@@ -10,6 +10,9 @@ keywords = ["protocol", "server", "client"]
 readme = "README.md"
 description = "An general client server framework for Rust based on coroutine."
 
+[lib]
+crate-type = ["dylib"]
+
 [dependencies]
 coroutine = { path = "../coroutine-rs" }
 comanaged =  { path = "../comanaged" }

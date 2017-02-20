@@ -24,6 +24,13 @@ impl conetty::Server for RpcServer {
             .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
 
         info!("req_id = {}", req_id);
+
+        if req_id == 0 {
+            let lib_path: String = encode::deserialize(&req[8..])
+                .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
+            return self.register(&lib_path);
+        }
+
         // get the dispatch_fn
         let handler = {
             let r_map = self.map.read().unwrap();
@@ -42,11 +49,17 @@ impl RpcServer {
         (addr: L)
          -> ::std::io::Result<conetty::coroutine::JoinHandle<()>> {
         let server = RpcServer { map: RwLock::new(HashMap::new()) };
-        server.register(get_dispatch_register());
         conetty::TcpServer::start(server, addr)
     }
 
-    pub fn register(&self, map: &'static [(u64, DispatchFn)]) {
+    pub fn register(&self, lib_path: &str) -> Result<(), conetty::WireError> {
+        use std::path::Path;
+        let lib_path = Path::new(lib_path);
+        println!("lib_path = {:?}", lib_path);
+        // load the map
+
+        let map = get_dispatch_register();
+
         let mut w_map = self.map.write().unwrap();
 
         for &(req_id, f) in map {
@@ -55,9 +68,35 @@ impl RpcServer {
                 None => info!("register rpc. req_id={}", req_id),
             }
         }
+
+        Ok(())
     }
 }
 
+pub trait RpcRegister: conetty::Client {
+    // should use a path of dynamic library as input
+    fn register(&self, path: &str) -> Result<(), conetty::Error> {
+        use bincode as encode;
+        use bincode::SizeLimit::Infinite;
+
+        let mut req = conetty::ReqBuf::new();
+        // serialize the function id, 0 for registry
+        let id = 0u64;
+        encode::serialize_into(&mut req, &id, Infinite)
+            .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
+        // serialize the path
+        encode::serialize_into(&mut req, path, Infinite)
+            .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
+        // call the server
+        let rsp_frame = self.call_service(req)?;
+        let rsp = rsp_frame.decode_rsp()?;
+        // deserialized the response
+        encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
+    }
+}
+
+impl RpcRegister for conetty::MultiplexClient {}
+impl RpcRegister for conetty::TcpClient {}
 
 // rpm_impl! {
 // rpc echo(data: String) -> String {
@@ -178,6 +217,19 @@ fn main() {
     let server = RpcServer::start(&addr).unwrap();
     let mut client = MultiplexClient::connect(addr).unwrap();
     client.set_timeout(::std::time::Duration::from_millis(100));
+
+    for i in 0..10 {
+        let s = format!("Hello World! id={}", i);
+        let data = client.echo(s);
+        println!("recv = {:?}", data);
+    }
+
+    for i in 0..10 {
+        let data = client.add(i, i);
+        println!("recv = {:?}", data);
+    }
+
+    client.register("asdsfafdasdf").unwrap();
 
     for i in 0..10 {
         let s = format!("Hello World! id={}", i);
