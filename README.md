@@ -21,35 +21,42 @@ the framework
 Add to your `Cargo.toml` dependencies:
 
 ```toml
-tarpc = { git = "https://github.com/Xudong-Huang/conetty" }
+conetty = { git = "https://github.com/Xudong-Huang/conetty" }
 ```
 
 ## Example
 
 ```rust
-#[macro_use]
 extern crate conetty;
 
-use conetty::{client, server};
+use std::str;
+use std::io::Write;
+use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
 
-rpc_service! {
-    rpc hello(name: String) -> String;
-}
+struct Echo;
 
-#[derive(Clone)]
-struct HelloServer;
-
-impl RpcService for HelloServer {
-    fn hello(&self, name: String) -> String {
-        format!("Hello, {}!", name)
+impl Server for Echo {
+    fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
+        println!("req = {:?}", req);
+        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
 fn main() {
-    let addr = "localhost:10000";
-    HelloServer.listen(addr).unwrap();
-    let client = RpcClient::connect(addr).unwrap();
-    println!("{}", client.hello("Mom".to_string()).unwrap());
+    let addr = ("127.0.0.1", 4000);
+    let server = Echo.start(&addr).unwrap();
+    let client = TcpClient::connect(addr).unwrap();
+
+    for i in 0..10 {
+        let mut buf = ReqBuf::new();
+        buf.write_fmt(format_args!("Hello World! id={}", i)).unwrap();
+        let data = client.call_service(buf).unwrap();
+        let rsp = data.decode_rsp().unwrap();
+        println!("recv = {:?}", str::from_utf8(&rsp).unwrap());
+    }
+
+    unsafe { server.coroutine().cancel() };
+    server.join().ok();
 }
 ```
 

@@ -1,10 +1,10 @@
 #![feature(test)]
 extern crate test;
 extern crate conetty;
-extern crate coroutine;
 
 use std::io::Write;
 use test::Bencher;
+use conetty::coroutine;
 use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
 
 struct Echo;
@@ -17,6 +17,7 @@ impl Server for Echo {
 
 #[bench]
 fn tcp_echo(b: &mut Bencher) {
+    coroutine::scheduler_config().set_workers(2).set_io_workers(4).set_pool_capacity(1000);
     let addr = ("127.0.0.1", 2000);
     let server = Echo.start(&addr).unwrap();
     let client = TcpClient::connect(addr).unwrap();

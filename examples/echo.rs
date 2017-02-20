@@ -46,7 +46,7 @@ impl EchoRpcClient {
 
     pub fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
         use conetty::Client;
-        use bincode::serde as encode;
+        use bincode as encode;
         use bincode::SizeLimit::Infinite;
 
         let mut req = conetty::ReqBuf::new();
@@ -63,7 +63,7 @@ impl EchoRpcClient {
 
     pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use conetty::Client;
-        use bincode::serde as encode;
+        use bincode as encode;
         use bincode::SizeLimit::Infinite;
 
         let mut req = conetty::ReqBuf::new();
@@ -90,7 +90,7 @@ impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
 
 impl<T: EchoRpc> conetty::Server for RpcServer<T> {
     fn service(&self, req: &[u8], rsp: &mut conetty::RspBuf) -> Result<(), conetty::WireError> {
-        use bincode::serde as encode;
+        use bincode as encode;
         use bincode::SizeLimit::Infinite;
 
         // deserialize the request

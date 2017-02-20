@@ -1,5 +1,4 @@
 extern crate conetty;
-extern crate coroutine;
 
 use std::str;
 use std::io::Write;
