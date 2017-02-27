@@ -86,6 +86,9 @@ unsafe impl Sync for MultiplexClient {}
 
 impl Drop for MultiplexClient {
     fn drop(&mut self) {
+        if ::std::thread::panicking() {
+            return;
+        }
         self.listener.take().map(|h| {
             unsafe { h.coroutine().cancel() };
             h.join().ok();
