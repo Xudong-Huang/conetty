@@ -1,6 +1,6 @@
 #![feature(associated_consts)]
 #[macro_use]
-extern crate tocken_id;
+extern crate token_id;
 #[macro_use]
 extern crate log;
 extern crate env_logger;
@@ -136,7 +136,7 @@ fn dispatch_req(req_id: u64,
     debug_assert_eq!(_id, req_id);
 
     // dispatch call the service
-    if req_id == tocken_id!(echo) {
+    if req_id == token_id!(echo) {
         // 0 => {
         let (data,): (String,) = encode::deserialize_from(&mut input, Infinite)
                 .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
@@ -144,7 +144,7 @@ fn dispatch_req(req_id: u64,
         // serialize the result
         encode::serialize_into(rsp, &ret, Infinite)
             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
-    } else if req_id == tocken_id!(add) {
+    } else if req_id == token_id!(add) {
         let (x, y): (u32, u32) = encode::deserialize_from(&mut input, Infinite)
                 .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         let ret = add(x, y);
@@ -157,8 +157,8 @@ fn dispatch_req(req_id: u64,
 }
 
 pub fn get_dispatch_register() -> &'static [(u64, DispatchFn)] {
-    const HANDLER_MAP: &'static [(u64, DispatchFn)] = &[(tocken_id!(echo), dispatch_req),
-                                                        (tocken_id!(add), dispatch_req)];
+    const HANDLER_MAP: &'static [(u64, DispatchFn)] = &[(token_id!(echo), dispatch_req),
+                                                        (token_id!(add), dispatch_req)];
     HANDLER_MAP
 }
 
@@ -169,7 +169,7 @@ pub trait RpcClient: conetty::Client {
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id
-        let id = tocken_id!(echo);
+        let id = token_id!(echo);
         encode::serialize_into(&mut req, &id, Infinite)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // serialize the para
@@ -189,7 +189,7 @@ pub trait RpcClient: conetty::Client {
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id
-        let id = tocken_id!(add);
+        let id = token_id!(add);
         encode::serialize_into(&mut req, &id, Infinite)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // serialize the para

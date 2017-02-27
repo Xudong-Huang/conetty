@@ -1,7 +1,6 @@
 #![feature(test)]
 extern crate test;
 extern crate conetty;
-extern crate coroutine;
 
 use std::io::Write;
 use test::Bencher;
