@@ -166,7 +166,12 @@ impl Client for MultiplexClient {
         let buf = req.finish(id as u64);
 
         let mut g = self.sock.lock().unwrap();
-        g.write_all(&buf).map_err(Error::from)?;
+        g.write_all(&buf)
+            .map_err(|err| {
+                // pop out the wait req if failed to send
+                self.req_map.get(id);
+                Error::from(err)
+            })?;
         drop(g);
 
         // wait for the rsp
