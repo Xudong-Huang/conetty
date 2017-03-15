@@ -99,6 +99,7 @@ impl Drop for MultiplexClient {
 impl MultiplexClient {
     /// connect to the server address
     pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<MultiplexClient> {
+        // this is a client side server that listening from server!
         let sock = TcpStream::connect(addr)?;
         let req_map = Arc::new(WaitReqMap::new());
 

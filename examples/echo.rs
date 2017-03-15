@@ -88,7 +88,7 @@ impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
     }
 }
 
-impl<T: EchoRpc> conetty::Server for RpcServer<T> {
+impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> {
     fn service(&self, req: &[u8], rsp: &mut conetty::RspBuf) -> Result<(), conetty::WireError> {
         use bincode as encode;
         use bincode::SizeLimit::Infinite;
@@ -99,22 +99,36 @@ impl<T: EchoRpc> conetty::Server for RpcServer<T> {
         // dispatch call the service
         match req {
             EchoRpcEnum::hello((arg0,)) => {
-                let ret = self.echo(arg0);
-                // serialize the result
-                encode::serialize_into(rsp, &ret, Infinite)
-                    .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
+                match ::std::panic::catch_unwind(|| self.echo(arg0)) {
+                    Ok(ret) => {
+                        // serialize the result
+                        encode::serialize_into(rsp, &ret, Infinite)
+                            .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
+                    }
+                    Err(_) => {
+                        // panic happend inside!
+                        Err(conetty::WireError::Status("rpc panicked in server!".to_owned()))
+                    }
+                }
             }
             EchoRpcEnum::add((arg0, arg1)) => {
-                let ret = self.add(arg0, arg1);
-                // serialize the result
-                encode::serialize_into(rsp, &ret, Infinite)
-                    .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
+                match ::std::panic::catch_unwind(|| self.add(arg0, arg1)) {
+                    Ok(ret) => {
+                        // serialize the result
+                        encode::serialize_into(rsp, &ret, Infinite)
+                            .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
+                    }
+                    Err(_) => {
+                        // panic happend inside!
+                        Err(conetty::WireError::Status("rpc panicked in server!".to_owned()))
+                    }
+                }
             }
         }
     }
 }
 
-impl<T: EchoRpc + 'static> RpcServer<T> {
+impl<T: EchoRpc + ::std::panic::RefUnwindSafe + 'static> RpcServer<T> {
     pub fn start<L: ::std::net::ToSocketAddrs>
         (self,
          addr: L)

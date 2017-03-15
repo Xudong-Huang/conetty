@@ -16,6 +16,7 @@ use {Error, WireError};
 const FRAME_MAX_LEN: u64 = 1024 * 1024;
 
 /// raw frame wrapper, low level protocol
+/// TODO: add check sum check
 #[derive(Debug)]
 pub struct Frame {
     /// frame id, req and rsp has the same id
