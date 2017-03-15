@@ -94,7 +94,7 @@ impl Frame {
             0 => Ok(data),
             1 => Err(ServerDeserialize(unsafe { String::from_utf8_unchecked(data.into()) })),
             2 => Err(ServerSerialize(unsafe { String::from_utf8_unchecked(data.into()) })),
-            3 => Err(Status(Cursor::new(data).read_u64::<BigEndian>()?)),
+            3 => Err(Status(unsafe { String::from_utf8_unchecked(data.into()) })),
             _ => {
                 let s = format!("invalid response type. ty={}", ty);
                 error!("{}", s);
@@ -163,7 +163,7 @@ impl RspBuf {
     /// convert self into raw buf that can be send as a frame
     pub fn finish(self, id: u64, ret: Result<(), WireError>) -> Vec<u8> {
         let mut cursor = self.0;
-        let mut dummy = Vec::new();
+        let dummy = Vec::new();
 
         let (ty, len, data) = match ret {
             Ok(_) => (0, cursor.get_ref().len() - 25, dummy.as_slice()),
@@ -171,10 +171,7 @@ impl RspBuf {
                 match *e {
                     WireError::ServerDeserialize(ref s) => (1, s.len(), s.as_bytes()),
                     WireError::ServerSerialize(ref s) => (2, s.len(), s.as_bytes()),
-                    WireError::Status(s) => {
-                        dummy.write_u64::<BigEndian>(s).unwrap();
-                        (3, 8, dummy.as_slice())
-                    }
+                    WireError::Status(ref s) => (3, s.len(), s.as_bytes()),
                 }
             }
         };

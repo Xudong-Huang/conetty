@@ -31,7 +31,7 @@ pub enum Error {
     /// The server returns an status error due to different reasons.
     ///
     /// Typically this indicates that the server is not healthy
-    Status(u64),
+    Status(String),
 }
 
 impl fmt::Display for Error {
@@ -41,7 +41,7 @@ impl fmt::Display for Error {
             Error::ClientSerialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
             Error::ServerDeserialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
             Error::ServerSerialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
-            Error::Status(e) => write!(f, r#"{}: "{}""#, self.description(), e),
+            Error::Status(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
             Error::Timeout => write!(f, r#"{}"#, self.description()),
             Error::Io(ref e) => fmt::Display::fmt(e, f),
         }
@@ -99,5 +99,5 @@ pub enum WireError {
     /// Error in serializing server response.
     ServerSerialize(String),
     /// Server Status
-    Status(u64),
+    Status(String),
 }

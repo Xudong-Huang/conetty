@@ -36,7 +36,7 @@ impl conetty::Server for RpcServer {
             let r_map = self.map.read().unwrap();
             match r_map.get(&req_id) {
                 Some(f) => *f,
-                None => return Err(conetty::WireError::Status(404)),
+                None => return Err(conetty::WireError::Status("Service not available.".to_owned())),
             }
         };
 

@@ -15,7 +15,7 @@ impl Server for Echo {
         coroutine::sleep(Duration::from_secs(1));
         // rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
         // Err(WireError::ServerDeserialize("asfasfdasd".into()))
-        Err(WireError::Status(250))
+        Err(WireError::Status("timeout".to_owned()))
     }
 }
 
