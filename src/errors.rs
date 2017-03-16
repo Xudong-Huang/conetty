@@ -86,6 +86,7 @@ impl From<WireError> for Error {
             WireError::ServerDeserialize(s) => Error::ServerDeserialize(s),
             WireError::ServerSerialize(s) => Error::ServerSerialize(s),
             WireError::Status(s) => Error::Status(s),
+            _ => unreachable!("unkonw WireError type received"),
         }
     }
 }
@@ -100,4 +101,8 @@ pub enum WireError {
     ServerSerialize(String),
     /// Server Status
     Status(String),
+    /// Server polling
+    /// this is a special error code that used for server polling request from client
+    /// client will first check this code in the very beginning before return to client rpc call
+    Polling,
 }

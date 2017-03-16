@@ -150,6 +150,7 @@ impl Write for ReqBuf {
 /// rsp frame buffer that can be serialized into
 pub struct RspBuf(Cursor<Vec<u8>>);
 
+pub const SERVER_POLL_ENCODE: u8 = 200;
 impl RspBuf {
     pub fn new() -> Self {
         let mut buf = Vec::with_capacity(64);
@@ -173,6 +174,7 @@ impl RspBuf {
                     WireError::ServerDeserialize(ref s) => (1, s.len(), s.as_bytes()),
                     WireError::ServerSerialize(ref s) => (2, s.len(), s.as_bytes()),
                     WireError::Status(ref s) => (3, s.len(), s.as_bytes()),
+                    WireError::Polling => (SERVER_POLL_ENCODE, 0, dummy.as_slice()),
                 }
             }
         };
@@ -195,7 +197,10 @@ impl RspBuf {
         cursor.write_u64::<BigEndian>(len).unwrap();
         // write the data into the writer
         match ty {
-            0 => {}
+            0 => {} // the normal ret already writed
+            SERVER_POLL_ENCODE => {
+                // the server need to poll the client, will be filtered out by multiplex_client
+            }
             1 | 2 | 3 => {
                 cursor.get_mut().resize(len as usize + 25, 0);
                 cursor.write_all(data).unwrap();
