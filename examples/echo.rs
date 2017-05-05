@@ -47,7 +47,7 @@ impl EchoRpcClient {
     pub fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
         use conetty::Client;
         use bincode as encode;
-        use bincode::SizeLimit::Infinite;
+        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
@@ -64,7 +64,7 @@ impl EchoRpcClient {
     pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use conetty::Client;
         use bincode as encode;
-        use bincode::SizeLimit::Infinite;
+        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
@@ -91,11 +91,12 @@ impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
 impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> {
     fn service(&self, req: &[u8], rsp: &mut conetty::RspBuf) -> Result<(), conetty::WireError> {
         use bincode as encode;
-        use bincode::SizeLimit::Infinite;
+        use bincode::Infinite;
 
         // deserialize the request
-        let req: EchoRpcEnum = encode::deserialize(req)
-            .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
+        let req: EchoRpcEnum =
+            encode::deserialize(req)
+                .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         // dispatch call the service
         match req {
             EchoRpcEnum::hello((arg0,)) => {

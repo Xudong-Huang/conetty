@@ -78,7 +78,7 @@ pub trait RpcRegister: conetty::Client {
     // should use a path of dynamic library as input
     fn register(&self, path: &str) -> Result<(), conetty::Error> {
         use bincode as encode;
-        use bincode::SizeLimit::Infinite;
+        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id, 0 for registry
@@ -126,7 +126,7 @@ fn dispatch_req(req_id: u64,
                 rsp: &mut conetty::RspBuf)
                 -> Result<(), conetty::WireError> {
     use bincode as encode;
-    use bincode::SizeLimit::Infinite;
+    use bincode::Infinite;
     use std::io::Cursor;
 
     let mut input = Cursor::new(req);
@@ -168,7 +168,7 @@ pub fn get_dispatch_register() -> &'static [(u64, DispatchFn)] {
 pub trait RpcClient: conetty::Client {
     fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
         use bincode as encode;
-        use bincode::SizeLimit::Infinite;
+        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id
@@ -188,7 +188,7 @@ pub trait RpcClient: conetty::Client {
 
     fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use bincode as encode;
-        use bincode::SizeLimit::Infinite;
+        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id

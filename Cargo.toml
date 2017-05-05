@@ -24,7 +24,7 @@ log = "0.3"
 env_logger = "0.4"
 serde = "0.9"
 serde_derive = "0.9"
-bincode = "1.0.0-alpha2"
+bincode = "1.0.0-alpha7"
 token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 
 [profile.release]
