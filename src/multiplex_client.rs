@@ -8,8 +8,8 @@ use Client;
 use coroutine;
 use errors::Error;
 use frame::{Frame, ReqBuf};
-use coroutine::net::TcpStream;
-use coroutine::sync::{AtomicOption, Mutex, Blocker};
+use may::net::TcpStream;
+use may::sync::{AtomicOption, Mutex, Blocker};
 
 struct WaitReq {
     blocker: Blocker,
@@ -35,7 +35,7 @@ impl WaitReqMap {
 
     pub fn get(&self, id: usize) -> Option<&mut WaitReq> {
         let mut m = self.map.lock().unwrap();
-        m.remove(&id).map(|v| { unsafe { &mut *v } })
+        m.remove(&id).map(|v| unsafe { &mut *v })
     }
 }
 
@@ -89,10 +89,12 @@ impl Drop for MultiplexClient {
         if ::std::thread::panicking() {
             return;
         }
-        self.listener.take().map(|h| {
-            unsafe { h.coroutine().cancel() };
-            h.join().ok();
-        });
+        self.listener
+            .take()
+            .map(|h| {
+                     unsafe { h.coroutine().cancel() };
+                     h.join().ok();
+                 });
     }
 }
 
@@ -108,7 +110,8 @@ impl MultiplexClient {
         let sock1 = sock.try_clone()?;
         let mut r_stream = BufReader::new(sock1);
         let req_map_1 = req_map.clone();
-        let listener = coroutine::Builder::new().name("MultiPlexClientListener".to_owned())
+        let listener = coroutine::Builder::new()
+            .name("MultiPlexClientListener".to_owned())
             .spawn(move || {
                 loop {
                     let rsp_frame = match Frame::decode_from(&mut r_stream) {
@@ -125,22 +128,24 @@ impl MultiplexClient {
                     info!("receive rsp, id={}", rsp_frame.id);
 
                     // get the wait req
-                    req_map_1.get(rsp_frame.id as usize).map(move |req| {
-                        // set the response
-                        req.rsp.swap(rsp_frame, Ordering::Release);
-                        // wake up the blocker
-                        req.blocker.unpark();
-                    });
+                    req_map_1
+                        .get(rsp_frame.id as usize)
+                        .map(move |req| {
+                                 // set the response
+                                 req.rsp.swap(rsp_frame, Ordering::Release);
+                                 // wake up the blocker
+                                 req.blocker.unpark();
+                             });
                 }
             })?;
 
         Ok(MultiplexClient {
-            id: AtomicUsize::new(0),
-            timeout: Duration::from_secs(10),
-            sock: Mutex::new(sock),
-            req_map: req_map,
-            listener: Some(listener),
-        })
+               id: AtomicUsize::new(0),
+               timeout: Duration::from_secs(10),
+               sock: Mutex::new(sock),
+               req_map: req_map,
+               listener: Some(listener),
+           })
     }
 
     /// set the default timeout value
@@ -169,10 +174,10 @@ impl Client for MultiplexClient {
         let mut g = self.sock.lock().unwrap();
         g.write_all(&buf)
             .map_err(|err| {
-                // pop out the wait req if failed to send
-                self.req_map.get(id);
-                Error::from(err)
-            })?;
+                         // pop out the wait req if failed to send
+                         self.req_map.get(id);
+                         Error::from(err)
+                     })?;
         drop(g);
 
         // wait for the rsp

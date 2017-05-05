@@ -4,8 +4,8 @@ use std::net::ToSocketAddrs;
 use std::io::{self, Write, BufReader};
 use Client;
 use errors::Error;
+use may::net::TcpStream;
 use frame::{Frame, ReqBuf};
-use coroutine::net::TcpStream;
 
 pub struct TcpClient {
     // each request would have a unique id
@@ -22,18 +22,22 @@ impl TcpClient {
     pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<TcpClient> {
         // this would bind a random port by the system
         let sock = TcpStream::connect(addr)?;
-        sock.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
+        sock.set_read_timeout(Some(Duration::from_secs(5)))
+            .unwrap();
 
         Ok(TcpClient {
-            id: RefCell::new(0),
-            sock: BufReader::with_capacity(1024, sock),
-        })
+               id: RefCell::new(0),
+               sock: BufReader::with_capacity(1024, sock),
+           })
     }
 
     /// set the default timeout value
     /// the initial timeout is 5 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
-        self.sock.get_ref().set_read_timeout(Some(timeout)).unwrap();
+        self.sock
+            .get_ref()
+            .set_read_timeout(Some(timeout))
+            .unwrap();
     }
 }
 
@@ -55,8 +59,8 @@ impl Client for TcpClient {
         // read the response
         loop {
             // deserialize the rsp
-            let rsp_frame =
-                Frame::decode_from(s).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+            let rsp_frame = Frame::decode_from(s)
+                .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // disgard the rsp that is is not belong to us
             if rsp_frame.id == id {

@@ -1,16 +1,19 @@
+extern crate may;
 extern crate conetty;
-extern crate coroutine;
 
 use std::str;
 use std::io::Write;
 use std::time::Duration;
+
+use may::coroutine;
 use conetty::{Server, Client, WireError, UdpServer, UdpClient, ReqBuf, RspBuf};
 
 struct Echo;
 
 impl Server for Echo {
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
-        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
+        rsp.write_all(req)
+            .map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
@@ -37,7 +40,8 @@ fn tcp_timeout() {
     impl Server for Echo {
         fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
             coroutine::sleep(Duration::from_secs(1));
-            rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
+            rsp.write_all(req)
+                .map_err(|e| WireError::ServerSerialize(e.to_string()))
         }
     }
 

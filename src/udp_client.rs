@@ -5,8 +5,8 @@ use std::net::ToSocketAddrs;
 use std::cell::UnsafeCell;
 use Client;
 use errors::Error;
+use may::net::UdpSocket;
 use frame::{Frame, ReqBuf};
-use coroutine::net::UdpSocket;
 
 pub struct UdpClient {
     // each request would have a unique id
@@ -26,13 +26,14 @@ impl UdpClient {
         // this would bind a random port by the system
         let sock = UdpSocket::bind("0.0.0.0:0")?;
         sock.connect(addr)?;
-        sock.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
+        sock.set_read_timeout(Some(Duration::from_secs(1)))
+            .unwrap();
 
         Ok(UdpClient {
-            id: RefCell::new(0),
-            sock: sock,
-            buf: UnsafeCell::new(vec![0; 1024]),
-        })
+               id: RefCell::new(0),
+               sock: sock,
+               buf: UnsafeCell::new(vec![0; 1024]),
+           })
     }
 
     /// set the default timeout value

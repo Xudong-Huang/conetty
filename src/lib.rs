@@ -1,6 +1,6 @@
 // #![deny(missing_docs)]
 #[doc(hidden)]
-pub extern crate coroutine;
+pub extern crate may;
 #[macro_use]
 extern crate log;
 #[doc(hidden)]
@@ -9,6 +9,7 @@ extern crate byteorder;
 extern crate comanaged;
 
 pub use errors::Error;
+pub use may::coroutine;
 
 #[doc(hidden)]
 pub use udp_client::UdpClient;

@@ -1,11 +1,13 @@
+extern crate may;
 extern crate conetty;
-extern crate coroutine;
 extern crate env_logger;
 
 use std::str;
 use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
+
+use may::coroutine;
 use conetty::{Server, Client, WireError, TcpServer, MultiplexClient, ReqBuf, RspBuf};
 
 struct Echo;
@@ -13,13 +15,14 @@ struct Echo;
 impl Server for Echo {
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
         // println!("req = {:?}", req);
-        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
+        rsp.write_all(req)
+            .map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
 fn main() {
     env_logger::init().unwrap();
-    coroutine::scheduler_config().set_workers(4).set_io_workers(4);
+    may::config().set_workers(4).set_io_workers(4);
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();

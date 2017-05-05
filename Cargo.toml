@@ -11,11 +11,12 @@ readme = "README.md"
 description = "An general client server framework for Rust based on coroutine."
 
 [lib]
-crate-type = ["dylib"]
+# crate-type = ["dylib"]
 
 [dependencies]
-coroutine = { path = "../coroutine-rs" }
-comanaged =  { path = "../comanaged" }
+# coroutine = { path = "../coroutine-rs" }
+may = { git = "ssh://git@gitlab.com/Xudong-Huang/may.git" }
+comanaged =  { git = "ssh://git@gitlab.com/Xudong-Huang/comanaged.git" }
 byteorder = "1.0"
 log = "0.3"
 
@@ -24,7 +25,7 @@ env_logger = "0.4"
 serde = "0.9"
 serde_derive = "0.9"
 bincode = "1.0.0-alpha2"
-token_id = { path = "../token_id" }
+token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 
 [profile.release]
 opt-level=3

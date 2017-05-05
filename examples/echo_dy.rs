@@ -8,7 +8,7 @@ extern crate conetty;
 extern crate bincode;
 
 use std::collections::HashMap;
-use conetty::coroutine::sync::RwLock;
+use conetty::may::sync::RwLock;
 
 pub type DispatchFn = fn(u64, &[u8], &mut conetty::RspBuf) -> Result<(), conetty::WireError>;
 pub struct RpcServer {
@@ -26,8 +26,9 @@ impl conetty::Server for RpcServer {
         info!("req_id = {}", req_id);
 
         if req_id == 0 {
-            let lib_path: String = encode::deserialize(&req[8..])
-                .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
+            let lib_path: String =
+                encode::deserialize(&req[8..])
+                    .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
             return self.register(&lib_path);
         }
 
@@ -138,14 +139,16 @@ fn dispatch_req(req_id: u64,
     // dispatch call the service
     if req_id == token_id!(echo) {
         // 0 => {
-        let (data,): (String,) = encode::deserialize_from(&mut input, Infinite)
+        let (data,): (String,) =
+            encode::deserialize_from(&mut input, Infinite)
                 .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         let ret = echo(data);
         // serialize the result
         encode::serialize_into(rsp, &ret, Infinite)
             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
     } else if req_id == token_id!(add) {
-        let (x, y): (u32, u32) = encode::deserialize_from(&mut input, Infinite)
+        let (x, y): (u32, u32) =
+            encode::deserialize_from(&mut input, Infinite)
                 .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         let ret = add(x, y);
         // serialize the result
