@@ -7,6 +7,8 @@ extern crate log;
 extern crate byteorder;
 #[doc(hidden)]
 extern crate comanaged;
+#[doc(hidden)]
+extern crate co_waiter;
 
 pub use errors::Error;
 pub use may::coroutine;
