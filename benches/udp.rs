@@ -21,10 +21,10 @@ fn udp_echo(b: &mut Bencher) {
     let client = UdpClient::connect(addr).unwrap();
 
     b.iter(|| {
-        let mut req = ReqBuf::new();
-        req.write(&vec![0; 100]).unwrap();
-        let _rsp = client.call_service(req).unwrap();
-    });
+               let mut req = ReqBuf::new();
+               req.write(&vec![0; 100]).unwrap();
+               let _rsp = client.call_service(req).unwrap();
+           });
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();

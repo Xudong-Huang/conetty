@@ -22,8 +22,7 @@ impl TcpClient {
     pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<TcpClient> {
         // this would bind a random port by the system
         let sock = TcpStream::connect(addr)?;
-        sock.set_read_timeout(Some(Duration::from_secs(5)))
-            .unwrap();
+        sock.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
 
         Ok(TcpClient {
                id: RefCell::new(0),
@@ -34,10 +33,7 @@ impl TcpClient {
     /// set the default timeout value
     /// the initial timeout is 5 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
-        self.sock
-            .get_ref()
-            .set_read_timeout(Some(timeout))
-            .unwrap();
+        self.sock.get_ref().set_read_timeout(Some(timeout)).unwrap();
     }
 }
 

@@ -49,10 +49,7 @@ impl Frame {
         cursor.write_u64::<BigEndian>(len - 16).unwrap();
         let data = cursor.into_inner();
 
-        Ok(Frame {
-            id: id,
-            data: data,
-        })
+        Ok(Frame { id: id, data: data })
     }
 
     /// convert self into raw buf that can be re-send as a frame

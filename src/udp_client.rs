@@ -26,8 +26,7 @@ impl UdpClient {
         // this would bind a random port by the system
         let sock = UdpSocket::bind("0.0.0.0:0")?;
         sock.connect(addr)?;
-        sock.set_read_timeout(Some(Duration::from_secs(1)))
-            .unwrap();
+        sock.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
 
         Ok(UdpClient {
                id: RefCell::new(0),

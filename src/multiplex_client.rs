@@ -73,9 +73,9 @@ impl MultiplexClient {
 
                     // set the wait req
                     let id = rsp_frame.id;
-                    req_map_1
-                        .set_rsp(&id, rsp_frame)
-                        .unwrap_or_else(|_| panic!("failed to set rsp: id={}", id));
+                    // ignore the cases that failed to find out a req waiter
+                    req_map_1.set_rsp(&id, rsp_frame).ok();
+                    // .unwrap_or_else(|_| panic!("failed to set rsp: id={}", id));
                 }
             })?;
 
@@ -107,11 +107,10 @@ impl Client for MultiplexClient {
         let buf = req.finish(id);
 
         let mut g = self.sock.lock().unwrap();
-        g.write_all(&buf).map_err(|err| Error::from(err))?;
+        g.write_all(&buf)?;
         drop(g);
 
         // wait for the rsp
-        let ret = rw.wait_rsp(self.timeout).map_err(|e| Error::from(e));
-        ret
+        Ok(rw.wait_rsp(self.timeout)?)
     }
 }
