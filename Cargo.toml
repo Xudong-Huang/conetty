@@ -8,24 +8,24 @@ homepage = "https://github.com/Xudong-Huang/conetty"
 repository = "https://github.com/Xudong-Huang/conetty"
 keywords = ["protocol", "server", "client"]
 readme = "README.md"
-description = "An general client server framework for Rust based on coroutine."
+description = "General client server framework for Rust based on coroutine."
 
 [lib]
 # crate-type = ["dylib"]
 
 [dependencies]
 log = "0.3"
-byteorder = "1.0"
+byteorder = "1"
 may = { git = "ssh://git@gitlab.com/Xudong-Huang/may.git" }
-co_waiter = { git = "ssh://git@gitlab.com/Xudong-Huang/co-waiter.git" }
+co_waiter = { git = "ssh://git@gitlab.com/Xudong-Huang/co_waiter.git" }
 comanaged =  { git = "ssh://git@gitlab.com/Xudong-Huang/comanaged.git" }
 
 [dev-dependencies]
-serde = "0.9"
-bincode = "1.0.0-alpha7"
+serde = "1"
+bincode = "0.8"
 token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 env_logger = "0.4"
-serde_derive = "0.9"
+serde_derive = "1"
 
 [profile.release]
 opt-level=3
