@@ -99,11 +99,11 @@ pub trait TcpServer: Server {
 
                                 info!("send rsp: id={}", req.id);
                                 // send the result back to client
-                                w_stream
-                                    .lock()
-                                    .unwrap()
-                                    .write_all(&data)
-                                    .unwrap_or_else(|e| error!("send rsp failed: err={:?}", e));
+                                w_stream.lock().unwrap().write_all(&data).unwrap_or_else(
+                                    |e| {
+                                        error!("send rsp failed: err={:?}", e)
+                                    },
+                                );
                             });
                         }
                     });

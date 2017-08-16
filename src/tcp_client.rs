@@ -7,6 +7,7 @@ use errors::Error;
 use may::net::TcpStream;
 use frame::{Frame, ReqBuf};
 
+#[derive(Debug)]
 pub struct TcpClient {
     // each request would have a unique id
     id: RefCell<u64>,
@@ -25,9 +26,9 @@ impl TcpClient {
         sock.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
 
         Ok(TcpClient {
-               id: RefCell::new(0),
-               sock: BufReader::with_capacity(1024, sock),
-           })
+            id: RefCell::new(0),
+            sock: BufReader::with_capacity(1024, sock),
+        })
     }
 
     /// set the default timeout value
@@ -55,8 +56,9 @@ impl Client for TcpClient {
         // read the response
         loop {
             // deserialize the rsp
-            let rsp_frame = Frame::decode_from(s)
-                .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+            let rsp_frame = Frame::decode_from(s).map_err(|e| {
+                Error::ClientDeserialize(e.to_string())
+            })?;
 
             // disgard the rsp that is is not belong to us
             if rsp_frame.id == id {

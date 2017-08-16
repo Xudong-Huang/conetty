@@ -12,6 +12,7 @@ use may::net::TcpStream;
 use co_waiter::WaiterMap;
 use frame::{Frame, ReqBuf};
 
+#[derive(Debug)]
 pub struct MultiplexClient {
     // each request would have a unique id
     id: AtomicUsize,
@@ -33,12 +34,10 @@ impl Drop for MultiplexClient {
         if ::std::thread::panicking() {
             return;
         }
-        self.listener
-            .take()
-            .map(|h| {
-                     unsafe { h.coroutine().cancel() };
-                     h.join().ok();
-                 });
+        self.listener.take().map(|h| {
+            unsafe { h.coroutine().cancel() };
+            h.join().ok();
+        });
     }
 }
 
@@ -80,12 +79,12 @@ impl MultiplexClient {
             })?;
 
         Ok(MultiplexClient {
-               id: AtomicUsize::new(0),
-               timeout: Duration::from_secs(10),
-               sock: Mutex::new(sock),
-               req_map: req_map,
-               listener: Some(listener),
-           })
+            id: AtomicUsize::new(0),
+            timeout: Duration::from_secs(10),
+            sock: Mutex::new(sock),
+            req_map: req_map,
+            listener: Some(listener),
+        })
     }
 
     /// set the default timeout value

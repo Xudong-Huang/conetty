@@ -8,6 +8,7 @@ use errors::Error;
 use may::net::UdpSocket;
 use frame::{Frame, ReqBuf};
 
+#[derive(Debug)]
 pub struct UdpClient {
     // each request would have a unique id
     id: RefCell<u64>,
@@ -29,10 +30,10 @@ impl UdpClient {
         sock.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
 
         Ok(UdpClient {
-               id: RefCell::new(0),
-               sock: sock,
-               buf: UnsafeCell::new(vec![0; 1024]),
-           })
+            id: RefCell::new(0),
+            sock: sock,
+            buf: UnsafeCell::new(vec![0; 1024]),
+        })
     }
 
     /// set the default timeout value
@@ -60,8 +61,9 @@ impl Client for UdpClient {
             self.sock.recv(buf).map_err(Error::from)?;
 
             // deserialize the rsp
-            let rsp_frame = Frame::decode_from(&mut Cursor::new(&buf))
-                .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
+            let rsp_frame = Frame::decode_from(&mut Cursor::new(&buf)).map_err(|e| {
+                Error::ClientDeserialize(e.to_string())
+            })?;
 
             // disgard the rsp that is is not belong to us
             if rsp_frame.id == id {
