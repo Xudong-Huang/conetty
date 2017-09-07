@@ -24,6 +24,7 @@ comanaged =  { git = "ssh://git@gitlab.com/Xudong-Huang/comanaged.git" }
 serde = "1"
 bincode = "0.8"
 token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
+token_id-plugins = { git = "https://github.com/Xudong-Huang/token_id.git" }
 env_logger = "0.4"
 serde_derive = "1"
 
