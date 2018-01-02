@@ -1,13 +1,12 @@
 use std::sync::Arc;
 use std::net::ToSocketAddrs;
-use std::io::{self, Cursor, BufReader, Write};
+use std::io::{self, BufReader, Cursor, Write};
 use Server;
 use coroutine;
-use comanaged::Manager;
+use co_managed::Manager;
 use frame::{Frame, RspBuf};
 use may::sync::Mutex;
-use may::net::{UdpSocket, TcpListener};
-
+use may::net::{TcpListener, UdpSocket};
 
 /// Provides a function for starting the service.
 pub trait UdpServer: Server {
@@ -16,9 +15,9 @@ pub trait UdpServer: Server {
     fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
         let sock = UdpSocket::bind(addr)?; // the write half
         let sock1 = sock.try_clone()?; // the read half
-        coroutine::Builder::new()
-            .name("UdpServer".to_owned())
-            .spawn(move || {
+        go!(
+            coroutine::Builder::new().name("UdpServer".to_owned()),
+            move || {
                 let server = Arc::new(self);
                 let mut buf = vec![0u8; 1024];
                 // the write half need to be protected by mutex
@@ -34,7 +33,7 @@ pub trait UdpServer: Server {
                     let sock = sock.clone();
                     let server = server.clone();
                     // let mutex = mutex.clone();
-                    coroutine::spawn(move || {
+                    go!(move || {
                         let mut rsp = RspBuf::new();
                         let ret = server.service(req.decode_req(), &mut rsp);
                         let data = rsp.finish(req.id, ret);
@@ -50,7 +49,8 @@ pub trait UdpServer: Server {
                         }
                     });
                 }
-            })
+            }
+        )
     }
 }
 
@@ -60,9 +60,9 @@ pub trait TcpServer: Server {
     /// return a coroutine that you can cancel it when need to stop the service
     fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
         let listener = TcpListener::bind(addr)?;
-        coroutine::Builder::new()
-            .name("TcpServer".to_owned())
-            .spawn(move || {
+        go!(
+            coroutine::Builder::new().name("TcpServer".to_owned()),
+            move || {
                 let server = Arc::new(self);
                 let manager = Manager::new();
                 for stream in listener.incoming() {
@@ -92,23 +92,24 @@ pub trait TcpServer: Server {
                             info!("get request: id={:?}", req.id);
                             let w_stream = ws.clone();
                             let server = server.clone();
-                            coroutine::spawn(move || {
+                            go!(move || {
                                 let mut rsp = RspBuf::new();
                                 let ret = server.service(req.decode_req(), &mut rsp);
                                 let data = rsp.finish(req.id, ret);
 
                                 info!("send rsp: id={}", req.id);
                                 // send the result back to client
-                                w_stream.lock().unwrap().write_all(&data).unwrap_or_else(
-                                    |e| {
-                                        error!("send rsp failed: err={:?}", e)
-                                    },
-                                );
+                                w_stream
+                                    .lock()
+                                    .unwrap()
+                                    .write_all(&data)
+                                    .unwrap_or_else(|e| error!("send rsp failed: err={:?}", e));
                             });
                         }
                     });
                 }
-            })
+            }
+        )
     }
 }
 

@@ -1,7 +1,7 @@
 use std::cell::RefCell;
 use std::time::Duration;
 use std::net::ToSocketAddrs;
-use std::io::{self, Write, BufReader};
+use std::io::{self, BufReader, Write};
 use Client;
 use errors::Error;
 use may::net::TcpStream;
@@ -56,9 +56,8 @@ impl Client for TcpClient {
         // read the response
         loop {
             // deserialize the rsp
-            let rsp_frame = Frame::decode_from(s).map_err(|e| {
-                Error::ClientDeserialize(e.to_string())
-            })?;
+            let rsp_frame =
+                Frame::decode_from(s).map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // disgard the rsp that is is not belong to us
             if rsp_frame.id == id {

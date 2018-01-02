@@ -1,12 +1,12 @@
-extern crate may;
 extern crate conetty;
+#[macro_use]
+extern crate may;
 
-use std::str;
 use std::io::Write;
 use std::time::Duration;
 
 use may::coroutine;
-use conetty::{Server, Client, WireError, UdpServer, UdpClient, ReqBuf, RspBuf};
+use conetty::{Client, ReqBuf, RspBuf, Server, UdpClient, UdpServer, WireError};
 
 struct Echo;
 
@@ -45,7 +45,6 @@ fn tcp_timeout() {
         }
     }
 
-
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
     let mut client = UdpClient::connect(addr).unwrap();
@@ -77,7 +76,7 @@ fn multi_client() {
     let mut vec = vec![];
     for i in 0..8 {
         let count_ref: &'static AtomicUsize = unsafe { mem::transmute(&count) };
-        let h = coroutine::spawn(move || {
+        let h = go!(move || {
             let client = UdpClient::connect(addr).unwrap();
             for j in 0..10 {
                 let mut req = ReqBuf::new();

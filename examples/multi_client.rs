@@ -1,12 +1,11 @@
-extern crate may;
 extern crate conetty;
 extern crate env_logger;
+#[macro_use]
+extern crate may;
 
-use std::str;
 use std::io::Write;
 
-use may::coroutine;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
+use conetty::{Client, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
 
 struct Echo;
 
@@ -27,7 +26,7 @@ fn main() {
 
     let mut vec = vec![];
     for i in 0..100 {
-        let handle = coroutine::spawn(move || {
+        let handle = go!(move || {
             let client = TcpClient::connect(addr).unwrap();
             for j in 0..1000 {
                 let mut req = ReqBuf::new();

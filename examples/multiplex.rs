@@ -1,14 +1,13 @@
-extern crate may;
 extern crate conetty;
 extern crate env_logger;
+#[macro_use]
+extern crate may;
 
-use std::str;
 use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 
-use may::coroutine;
-use conetty::{Server, Client, WireError, TcpServer, MultiplexClient, ReqBuf, RspBuf};
+use conetty::{Client, MultiplexClient, ReqBuf, RspBuf, Server, TcpServer, WireError};
 
 struct Echo;
 
@@ -33,7 +32,7 @@ fn main() {
     let mut vec = vec![];
     for i in 0..100 {
         let client = client.clone();
-        let j = coroutine::spawn(move || {
+        let j = go!(move || {
             for j in 0..1000 {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();

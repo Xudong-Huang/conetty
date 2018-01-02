@@ -1,14 +1,15 @@
 // #![deny(missing_docs)]
 #[doc(hidden)]
-pub extern crate may;
+extern crate byteorder;
+#[doc(hidden)]
+extern crate co_managed;
+#[doc(hidden)]
+extern crate co_waiter;
 #[macro_use]
 extern crate log;
 #[doc(hidden)]
-extern crate byteorder;
-#[doc(hidden)]
-extern crate comanaged;
-#[doc(hidden)]
-extern crate co_waiter;
+#[macro_use]
+pub extern crate may;
 
 pub use errors::Error;
 pub use may::coroutine;
@@ -20,7 +21,7 @@ pub use tcp_client::TcpClient;
 #[doc(hidden)]
 pub use multiplex_client::MultiplexClient;
 #[doc(hidden)]
-pub use server::{UdpServer, TcpServer};
+pub use server::{TcpServer, UdpServer};
 #[doc(hidden)]
 pub use errors::WireError;
 #[doc(hidden)]

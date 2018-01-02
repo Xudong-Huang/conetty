@@ -53,9 +53,9 @@ impl MultiplexClient {
         let sock1 = sock.try_clone()?;
         let mut r_stream = BufReader::new(sock1);
         let req_map_1 = req_map.clone();
-        let listener = coroutine::Builder::new()
-            .name("MultiPlexClientListener".to_owned())
-            .spawn(move || {
+        let listener = go!(
+            coroutine::Builder::new().name("MultiPlexClientListener".to_owned()),
+            move || {
                 loop {
                     let rsp_frame = match Frame::decode_from(&mut r_stream) {
                         Ok(r) => r,
@@ -76,7 +76,8 @@ impl MultiplexClient {
                     req_map_1.set_rsp(&id, rsp_frame).ok();
                     // .unwrap_or_else(|_| panic!("failed to set rsp: id={}", id));
                 }
-            })?;
+            }
+        )?;
 
         Ok(MultiplexClient {
             id: AtomicUsize::new(0),

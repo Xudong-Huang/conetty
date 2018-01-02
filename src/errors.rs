@@ -63,12 +63,12 @@ impl StdError for Error {
 
     fn cause(&self) -> Option<&StdError> {
         match *self {
-            Error::ClientDeserialize(_) |
-            Error::ClientSerialize(_) |
-            Error::ServerDeserialize(_) |
-            Error::ServerSerialize(_) |
-            Error::Status(_) |
-            Error::Timeout => None,
+            Error::ClientDeserialize(_)
+            | Error::ClientSerialize(_)
+            | Error::ServerDeserialize(_)
+            | Error::ServerSerialize(_)
+            | Error::Status(_)
+            | Error::Timeout => None,
             Error::Io(ref e) => e.cause(),
         }
     }

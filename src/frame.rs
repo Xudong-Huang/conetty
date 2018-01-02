@@ -1,7 +1,6 @@
-use std::io::{self, Cursor, Read, Write, ErrorKind};
+use std::io::{self, Cursor, ErrorKind, Read, Write};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
 use {Error, WireError};
-
 
 // Frame layout
 // id(u64) + len(u64) + payload([u8; len])
@@ -90,8 +89,12 @@ impl Frame {
         // info!("decode response, ty={}, len={}", ty, len);
         match ty {
             0 => Ok(data),
-            1 => Err(ServerDeserialize(unsafe { String::from_utf8_unchecked(data.into()) })),
-            2 => Err(ServerSerialize(unsafe { String::from_utf8_unchecked(data.into()) })),
+            1 => Err(ServerDeserialize(unsafe {
+                String::from_utf8_unchecked(data.into())
+            })),
+            2 => Err(ServerSerialize(unsafe {
+                String::from_utf8_unchecked(data.into())
+            })),
             3 => Err(Status(unsafe { String::from_utf8_unchecked(data.into()) })),
             _ => {
                 let s = format!("invalid response type. ty={}", ty);
@@ -166,14 +169,12 @@ impl RspBuf {
 
         let (ty, len, data) = match ret {
             Ok(_) => (0, cursor.get_ref().len() - 25, dummy.as_slice()),
-            Err(ref e) => {
-                match *e {
-                    WireError::ServerDeserialize(ref s) => (1, s.len(), s.as_bytes()),
-                    WireError::ServerSerialize(ref s) => (2, s.len(), s.as_bytes()),
-                    WireError::Status(ref s) => (3, s.len(), s.as_bytes()),
-                    WireError::Polling => (SERVER_POLL_ENCODE, 0, dummy.as_slice()),
-                }
-            }
+            Err(ref e) => match *e {
+                WireError::ServerDeserialize(ref s) => (1, s.len(), s.as_bytes()),
+                WireError::ServerSerialize(ref s) => (2, s.len(), s.as_bytes()),
+                WireError::Status(ref s) => (3, s.len(), s.as_bytes()),
+                WireError::Polling => (SERVER_POLL_ENCODE, 0, dummy.as_slice()),
+            },
         };
 
         let len = len as u64;

@@ -14,11 +14,11 @@ description = "General client server framework for Rust based on coroutine."
 # crate-type = ["dylib"]
 
 [dependencies]
-log = "0.3"
+log = "0.4"
 byteorder = "1"
-may = { git = "ssh://git@gitlab.com/Xudong-Huang/may.git" }
-co_waiter = { git = "ssh://git@gitlab.com/Xudong-Huang/co_waiter.git" }
-comanaged =  { git = "ssh://git@gitlab.com/Xudong-Huang/comanaged.git" }
+may = { git = "https://github.com/Xudong-Huang/may.git" }
+co_waiter = { git = "https://github.com/Xudong-Huang/co_waiter.git" }
+co_managed =  { git = "https://github.com/Xudong-Huang/co_managed.git" }
 
 [dev-dependencies]
 serde = "1"
