@@ -51,7 +51,7 @@ impl Client for TcpClient {
         let s = &mut me.sock;
 
         // encode the request
-        s.get_ref().write_all(&(req.finish(id)))?;
+        s.get_mut().write_all(&(req.finish(id)))?;
 
         // read the response
         loop {
