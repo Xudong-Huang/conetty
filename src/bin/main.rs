@@ -1,15 +1,15 @@
-extern crate conetty;
-
-use std::str;
 use std::io::Write;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
+use std::str;
+
+use conetty::{Client, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
 
 struct Echo;
 
 impl Server for Echo {
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
         println!("req = {:?}", req);
-        rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
+        rsp.write_all(req)
+            .map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
 }
 
@@ -20,7 +20,8 @@ fn main() {
 
     for i in 0..10 {
         let mut buf = ReqBuf::new();
-        buf.write_fmt(format_args!("Hello World! id={}", i)).unwrap();
+        buf.write_fmt(format_args!("Hello World! id={}", i))
+            .unwrap();
         let data = client.call_service(buf).unwrap();
         let rsp = data.decode_rsp().unwrap();
         println!("recv = {:?}", str::from_utf8(&rsp).unwrap());

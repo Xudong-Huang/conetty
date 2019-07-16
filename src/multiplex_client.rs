@@ -1,16 +1,16 @@
+use std::io::{self, BufReader, Write};
+use std::net::ToSocketAddrs;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
-use std::net::ToSocketAddrs;
-use std::io::{self, BufReader, Write};
-use std::sync::atomic::{AtomicUsize, Ordering};
 
-use Client;
-use coroutine;
-use errors::Error;
-use may::sync::Mutex;
-use may::net::TcpStream;
+use crate::errors::Error;
+use crate::frame::{Frame, ReqBuf};
+use crate::Client;
 use co_waiter::WaiterMap;
-use frame::{Frame, ReqBuf};
+use may::net::TcpStream;
+use may::sync::Mutex;
+use may::{coroutine, go};
 
 #[derive(Debug)]
 pub struct MultiplexClient {

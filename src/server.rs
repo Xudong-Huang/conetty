@@ -1,12 +1,13 @@
-use std::sync::Arc;
-use std::net::ToSocketAddrs;
 use std::io::{self, BufReader, Cursor, Write};
-use Server;
-use coroutine;
+use std::net::ToSocketAddrs;
+use std::sync::Arc;
+
+use crate::frame::{Frame, RspBuf};
+use crate::Server;
 use co_managed::Manager;
-use frame::{Frame, RspBuf};
-use may::sync::Mutex;
 use may::net::{TcpListener, UdpSocket};
+use may::sync::Mutex;
+use may::{coroutine, go};
 
 /// Provides a function for starting the service.
 pub trait UdpServer: Server {

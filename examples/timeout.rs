@@ -1,12 +1,8 @@
-extern crate conetty;
-extern crate env_logger;
-extern crate may;
-
 use std::io::Write;
 use std::time::Duration;
 
-use may::coroutine;
 use conetty::{Client, ReqBuf, RspBuf, Server, UdpClient, UdpServer, WireError};
+use may::coroutine;
 
 struct Echo;
 

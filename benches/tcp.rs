@@ -1,10 +1,10 @@
 #![feature(test)]
 extern crate test;
-extern crate conetty;
 
 use std::io::Write;
+
+use conetty::{Client, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
 use test::Bencher;
-use conetty::{Server, Client, WireError, TcpServer, TcpClient, ReqBuf, RspBuf};
 
 struct Echo;
 
@@ -17,7 +17,7 @@ impl Server for Echo {
 
 #[bench]
 fn tcp_echo(b: &mut Bencher) {
-    conetty::may::config()
+    may::config()
         .set_workers(2)
         .set_io_workers(4)
         .set_pool_capacity(1000);
@@ -26,10 +26,10 @@ fn tcp_echo(b: &mut Bencher) {
     let client = TcpClient::connect(addr).unwrap();
 
     b.iter(|| {
-               let mut req = ReqBuf::new();
-               req.write(&vec![0; 100]).unwrap();
-               let _rsp = client.call_service(req).unwrap();
-           });
+        let mut req = ReqBuf::new();
+        req.write(&vec![0; 100]).unwrap();
+        let _rsp = client.call_service(req).unwrap();
+    });
 
     unsafe { server.coroutine().cancel() };
     server.join().ok();

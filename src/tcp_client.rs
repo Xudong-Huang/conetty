@@ -1,11 +1,12 @@
 use std::cell::RefCell;
-use std::time::Duration;
-use std::net::ToSocketAddrs;
 use std::io::{self, BufReader, Write};
-use Client;
-use errors::Error;
+use std::net::ToSocketAddrs;
+use std::time::Duration;
+
+use crate::errors::Error;
+use crate::frame::{Frame, ReqBuf};
+use crate::Client;
 use may::net::TcpStream;
-use frame::{Frame, ReqBuf};
 
 #[derive(Debug)]
 pub struct TcpClient {

@@ -1,6 +1,7 @@
 use std::io::{self, Cursor, ErrorKind, Read, Write};
+
+use crate::{Error, WireError};
 use byteorder::{BigEndian, ReadBytesExt, WriteBytesExt};
-use {Error, WireError};
 
 // Frame layout
 // id(u64) + len(u64) + payload([u8; len])

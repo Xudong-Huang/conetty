@@ -1,40 +1,30 @@
 // #![deny(missing_docs)]
-#[doc(hidden)]
-extern crate byteorder;
-#[doc(hidden)]
-extern crate co_managed;
-#[doc(hidden)]
-extern crate co_waiter;
 #[macro_use]
 extern crate log;
-#[doc(hidden)]
-#[macro_use]
-pub extern crate may;
-
-pub use errors::Error;
-pub use may::coroutine;
 
 #[doc(hidden)]
-pub use udp_client::UdpClient;
+pub use errors::{Error, WireError};
 #[doc(hidden)]
-pub use tcp_client::TcpClient;
+pub use frame::{Frame, ReqBuf, RspBuf};
 #[doc(hidden)]
 pub use multiplex_client::MultiplexClient;
 #[doc(hidden)]
 pub use server::{TcpServer, UdpServer};
 #[doc(hidden)]
-pub use errors::WireError;
+pub use tcp_client::TcpClient;
 #[doc(hidden)]
-pub use frame::{Frame, ReqBuf, RspBuf};
+pub use udp_client::UdpClient;
 
 macro_rules! t {
-    ($e: expr) => (match $e {
-        Ok(val) => val,
-        Err(err) => {
-            error!("call = {:?}\nerr = {:?}", stringify!($e), err);
-            continue;
+    ($e: expr) => {
+        match $e {
+            Ok(val) => val,
+            Err(err) => {
+                error!("call = {:?}\nerr = {:?}", stringify!($e), err);
+                continue;
+            }
         }
-    })
+    };
 }
 
 /// rpc client trait
@@ -56,13 +46,13 @@ pub trait Server: Send + Sync + Sized + 'static {
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError>;
 }
 
+/// Provides a few different error types.
+mod errors;
 /// raw frame protocol
 mod frame;
-/// Provides client impl.
-mod udp_client;
-mod tcp_client;
 mod multiplex_client;
 /// Provides server framework.
 mod server;
-/// Provides a few different error types.
-mod errors;
+mod tcp_client;
+/// Provides client impl.
+mod udp_client;

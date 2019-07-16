@@ -1,9 +1,5 @@
-extern crate conetty;
-extern crate bincode;
-extern crate env_logger;
 #[macro_use]
 extern crate serde_derive;
-
 
 struct Echo;
 
@@ -45,9 +41,9 @@ impl EchoRpcClient {
     }
 
     pub fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
-        use conetty::Client;
         use bincode as encode;
         use bincode::Infinite;
+        use conetty::Client;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
@@ -62,9 +58,9 @@ impl EchoRpcClient {
     }
 
     pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
-        use conetty::Client;
         use bincode as encode;
         use bincode::Infinite;
+        use conetty::Client;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
@@ -94,9 +90,8 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
         use bincode::Infinite;
 
         // deserialize the request
-        let req: EchoRpcEnum =
-            encode::deserialize(req)
-                .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
+        let req: EchoRpcEnum = encode::deserialize(req)
+            .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         // dispatch call the service
         match req {
             EchoRpcEnum::hello((arg0,)) => {
@@ -108,7 +103,9 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
                     }
                     Err(_) => {
                         // panic happend inside!
-                        Err(conetty::WireError::Status("rpc panicked in server!".to_owned()))
+                        Err(conetty::WireError::Status(
+                            "rpc panicked in server!".to_owned(),
+                        ))
                     }
                 }
             }
@@ -121,7 +118,9 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
                     }
                     Err(_) => {
                         // panic happend inside!
-                        Err(conetty::WireError::Status("rpc panicked in server!".to_owned()))
+                        Err(conetty::WireError::Status(
+                            "rpc panicked in server!".to_owned(),
+                        ))
                     }
                 }
             }
@@ -130,10 +129,10 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
 }
 
 impl<T: EchoRpc + ::std::panic::RefUnwindSafe + 'static> RpcServer<T> {
-    pub fn start<L: ::std::net::ToSocketAddrs>
-        (self,
-         addr: L)
-         -> ::std::io::Result<conetty::coroutine::JoinHandle<()>> {
+    pub fn start<L: ::std::net::ToSocketAddrs>(
+        self,
+        addr: L,
+    ) -> ::std::io::Result<may::coroutine::JoinHandle<()>> {
         conetty::UdpServer::start(self, addr)
     }
 }

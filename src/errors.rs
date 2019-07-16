@@ -1,5 +1,5 @@
-use std::{fmt, io};
 use std::error::Error as StdError;
+use std::{fmt, io};
 
 /// All errors that can occur during the use of tarpc.
 #[derive(Debug)]
@@ -61,7 +61,7 @@ impl StdError for Error {
         }
     }
 
-    fn cause(&self) -> Option<&StdError> {
+    fn cause(&self) -> Option<&dyn StdError> {
         match *self {
             Error::ClientDeserialize(_)
             | Error::ClientSerialize(_)
@@ -69,7 +69,7 @@ impl StdError for Error {
             | Error::ServerSerialize(_)
             | Error::Status(_)
             | Error::Timeout => None,
-            Error::Io(ref e) => e.cause(),
+            Error::Io(ref e) => e.source(),
         }
     }
 }

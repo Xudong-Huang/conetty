@@ -1,12 +1,13 @@
 use std::cell::RefCell;
-use std::time::Duration;
+use std::cell::UnsafeCell;
 use std::io::{self, Cursor};
 use std::net::ToSocketAddrs;
-use std::cell::UnsafeCell;
-use Client;
-use errors::Error;
+use std::time::Duration;
+
+use crate::errors::Error;
+use crate::frame::{Frame, ReqBuf};
+use crate::Client;
 use may::net::UdpSocket;
-use frame::{Frame, ReqBuf};
 
 #[derive(Debug)]
 pub struct UdpClient {
