@@ -31,8 +31,8 @@ impl UdpClient {
         sock.set_read_timeout(Some(Duration::from_secs(1))).unwrap();
 
         Ok(UdpClient {
+            sock,
             id: RefCell::new(0),
-            sock: sock,
             buf: UnsafeCell::new(vec![0; 1024]),
         })
     }

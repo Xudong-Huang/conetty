@@ -48,6 +48,7 @@ impl Client for TcpClient {
         };
         info!("request id = {}", id);
 
+        #[allow(clippy::cast_ref_to_mut)]
         let me = unsafe { &mut *(self as *const _ as *mut Self) };
         let s = &mut me.sock;
 

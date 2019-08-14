@@ -1,8 +1,9 @@
-use std::io::{self, BufReader, Cursor, Write};
+use std::io::{self, BufReader, Cursor};
 use std::net::ToSocketAddrs;
 use std::sync::Arc;
 
 use crate::frame::{Frame, RspBuf};
+use crate::queued_writer::QueuedWriter;
 use crate::Server;
 use co_managed::Manager;
 use may::net::{TcpListener, UdpSocket};
@@ -75,7 +76,7 @@ pub trait TcpServer: Server {
                         let mut rs = BufReader::new(rs);
                         // the write half need to be protected by mutex
                         // for that coroutine io obj can't shared safely
-                        let ws = Arc::new(Mutex::new(stream));
+                        let ws = Arc::new(QueuedWriter::new(stream));
 
                         loop {
                             let req = match Frame::decode_from(&mut rs) {
@@ -100,11 +101,7 @@ pub trait TcpServer: Server {
 
                                 info!("send rsp: id={}", req.id);
                                 // send the result back to client
-                                w_stream
-                                    .lock()
-                                    .unwrap()
-                                    .write_all(&data)
-                                    .unwrap_or_else(|e| error!("send rsp failed: err={:?}", e));
+                                w_stream.write(data);
                             });
                         }
                     });

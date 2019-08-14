@@ -49,7 +49,7 @@ impl Frame {
         cursor.write_u64::<BigEndian>(len - 16).unwrap();
         let data = cursor.into_inner();
 
-        Ok(Frame { id: id, data: data })
+        Ok(Frame { id, data })
     }
 
     /// convert self into raw buf that can be re-send as a frame
@@ -109,6 +109,12 @@ impl Frame {
 /// req frame buffer that can be serialized into
 pub struct ReqBuf(Cursor<Vec<u8>>);
 
+impl Default for ReqBuf {
+    fn default() -> Self {
+        ReqBuf::new()
+    }
+}
+
 impl ReqBuf {
     pub fn new() -> Self {
         let mut buf = Vec::with_capacity(128);
@@ -150,6 +156,12 @@ impl Write for ReqBuf {
 
 /// rsp frame buffer that can be serialized into
 pub struct RspBuf(Cursor<Vec<u8>>);
+
+impl Default for RspBuf {
+    fn default() -> Self {
+        RspBuf::new()
+    }
+}
 
 pub const SERVER_POLL_ENCODE: u8 = 200;
 impl RspBuf {

@@ -51,6 +51,7 @@ mod errors;
 /// raw frame protocol
 mod frame;
 mod multiplex_client;
+mod queued_writer;
 /// Provides server framework.
 mod server;
 mod tcp_client;

@@ -1,4 +1,4 @@
-use std::io::{self, BufReader, Write};
+use std::io::{self, BufReader};
 use std::net::ToSocketAddrs;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -6,10 +6,10 @@ use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
+use crate::queued_writer::QueuedWriter;
 use crate::Client;
 use co_waiter::WaiterMap;
 use may::net::TcpStream;
-use may::sync::Mutex;
 use may::{coroutine, go};
 
 #[derive(Debug)]
@@ -19,7 +19,7 @@ pub struct MultiplexClient {
     // default timeout is 10s
     timeout: Duration,
     // the connection
-    sock: Mutex<TcpStream>,
+    sock: QueuedWriter<TcpStream>,
     // the waiting request
     req_map: Arc<WaiterMap<u64, Frame>>,
     // the listening coroutine
@@ -34,10 +34,11 @@ impl Drop for MultiplexClient {
         if ::std::thread::panicking() {
             return;
         }
-        self.listener.take().map(|h| {
+        
+        if let Some(h) = self.listener.take() {
             unsafe { h.coroutine().cancel() };
             h.join().ok();
-        });
+        }
     }
 }
 
@@ -80,10 +81,10 @@ impl MultiplexClient {
         )?;
 
         Ok(MultiplexClient {
+            req_map,
             id: AtomicUsize::new(0),
             timeout: Duration::from_secs(10),
-            sock: Mutex::new(sock),
-            req_map: req_map,
+            sock: QueuedWriter::new(sock),
             listener: Some(listener),
         })
     }
@@ -106,9 +107,7 @@ impl Client for MultiplexClient {
         // send the request
         let buf = req.finish(id);
 
-        let mut g = self.sock.lock().unwrap();
-        g.write_all(&buf)?;
-        drop(g);
+        self.sock.write(buf);
 
         // wait for the rsp
         Ok(rw.wait_rsp(self.timeout)?)
