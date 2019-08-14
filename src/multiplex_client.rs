@@ -34,7 +34,7 @@ impl Drop for MultiplexClient {
         if ::std::thread::panicking() {
             return;
         }
-        
+
         if let Some(h) = self.listener.take() {
             unsafe { h.coroutine().cancel() };
             h.join().ok();
