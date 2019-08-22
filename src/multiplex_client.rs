@@ -1,27 +1,21 @@
 use std::io::{self, BufReader};
 use std::net::ToSocketAddrs;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::queued_writer::QueuedWriter;
 use crate::Client;
-use co_waiter::WaiterMap;
+use co_waiter::token_waiter::TokenWaiter;
 use may::net::TcpStream;
 use may::{coroutine, go};
 
 #[derive(Debug)]
 pub struct MultiplexClient {
-    // each request would have a unique id
-    id: AtomicUsize,
     // default timeout is 10s
-    timeout: Duration,
+    timeout: Option<Duration>,
     // the connection
     sock: QueuedWriter<TcpStream>,
-    // the waiting request
-    req_map: Arc<WaiterMap<u64, Frame>>,
     // the listening coroutine
     listener: Option<coroutine::JoinHandle<()>>,
 }
@@ -47,13 +41,11 @@ impl MultiplexClient {
     pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<MultiplexClient> {
         // this is a client side server that listening from server!
         let sock = TcpStream::connect(addr)?;
-        let req_map = Arc::new(WaiterMap::new());
 
         // here we must clone the socket for read
         // we can't share it between coroutines
         let sock1 = sock.try_clone()?;
         let mut r_stream = BufReader::new(sock1);
-        let req_map_1 = req_map.clone();
         let listener = go!(
             coroutine::Builder::new().name("MultiPlexClientListener".to_owned()),
             move || {
@@ -72,18 +64,16 @@ impl MultiplexClient {
                     info!("receive rsp, id={}", rsp_frame.id);
 
                     // set the wait req
-                    let id = rsp_frame.id;
+                    let id = rsp_frame.id as usize;
                     // ignore the cases that failed to find out a req waiter
-                    req_map_1.set_rsp(&id, rsp_frame).ok();
+                    TokenWaiter::set_rsp(id, rsp_frame);
                     // .unwrap_or_else(|_| panic!("failed to set rsp: id={}", id));
                 }
             }
         )?;
 
         Ok(MultiplexClient {
-            req_map,
-            id: AtomicUsize::new(0),
-            timeout: Duration::from_secs(10),
+            timeout: None,
             sock: QueuedWriter::new(sock),
             listener: Some(listener),
         })
@@ -92,24 +82,23 @@ impl MultiplexClient {
     /// set the default timeout value
     /// the initial timeout is 10 seconds
     pub fn set_timeout(&mut self, timeout: Duration) {
-        self.timeout = timeout;
+        self.timeout = Some(timeout);
     }
 }
 
 impl Client for MultiplexClient {
     fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
-        let id = self.id.fetch_add(1, Ordering::Relaxed) as u64;
+        let waiter = TokenWaiter::new();
+        let waiter = std::pin::Pin::new(&waiter);
+        let id = waiter.get_id();
         info!("request id = {}", id);
 
-        // must regiser before io
-        let rw = self.req_map.new_waiter(id);
-
         // send the request
-        let buf = req.finish(id);
+        let buf = req.finish(id as u64);
 
         self.sock.write(buf);
 
         // wait for the rsp
-        Ok(rw.wait_rsp(self.timeout)?)
+        Ok(waiter.wait_rsp(self.timeout)?)
     }
 }
