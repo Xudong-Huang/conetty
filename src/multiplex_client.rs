@@ -20,9 +20,6 @@ pub struct MultiplexClient {
     listener: Option<coroutine::JoinHandle<()>>,
 }
 
-unsafe impl Send for MultiplexClient {}
-unsafe impl Sync for MultiplexClient {}
-
 impl Drop for MultiplexClient {
     fn drop(&mut self) {
         if ::std::thread::panicking() {
