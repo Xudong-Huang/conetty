@@ -5,14 +5,16 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use arrayvec::ArrayVec;
 use crossbeam::queue::SegQueue;
 
+const MAX_VEC_BUF: usize = 64;
+
 struct VecBufs {
     block: usize,
     pos: usize,
-    bufs: ArrayVec<[Vec<u8>; 32]>,
+    bufs: ArrayVec<[Vec<u8>; MAX_VEC_BUF]>,
 }
 
 impl VecBufs {
-    fn new(bufs: ArrayVec<[Vec<u8>; 32]>) -> Self {
+    fn new(bufs: ArrayVec<[Vec<u8>; MAX_VEC_BUF]>) -> Self {
         VecBufs {
             block: 0,
             pos: 0,
@@ -20,7 +22,7 @@ impl VecBufs {
         }
     }
 
-    fn get_io_slice(&self) -> ArrayVec<[IoSlice<'_>; 32]> {
+    fn get_io_slice(&self) -> ArrayVec<[IoSlice<'_>; MAX_VEC_BUF]> {
         let mut ret = ArrayVec::new();
         let first = IoSlice::new(&self.bufs[self.block][self.pos..]);
         ret.push(first);
@@ -88,7 +90,7 @@ impl<W: Write> QueuedWriter<W> {
             loop {
                 let mut totoal_data = ArrayVec::new();
                 let mut pack_num = 0;
-                while pack_num < 32 {
+                while pack_num < MAX_VEC_BUF {
                     if let Ok(data) = self.data_queue.pop() {
                         totoal_data.push(data);
                         cnt += 1;

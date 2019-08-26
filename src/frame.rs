@@ -40,7 +40,8 @@ impl Frame {
             return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
-        let mut data = vec![0; len as usize];
+        let mut data = Vec::with_capacity(len as usize);
+        unsafe { data.set_len(len as usize) }; // avoid one memset
         r.read_exact(&mut data[16..])?;
 
         // blow can be skipped, we don't need them in the buffer
@@ -53,16 +54,15 @@ impl Frame {
     }
 
     /// convert self into raw buf that can be re-send as a frame
-    #[allow(dead_code)]
-    pub fn finish(self, id: u64) -> Vec<u8> {
-        let mut cursor = Cursor::new(self.data);
+    // pub fn finish(self, id: u64) -> Vec<u8> {
+    //     let mut cursor = Cursor::new(self.data);
 
-        // write from start
-        cursor.write_u64::<BigEndian>(id).unwrap();
-        info!("re-encode id = {:?}", id);
+    //     // write from start
+    //     cursor.write_u64::<BigEndian>(id).unwrap();
+    //     info!("re-encode id = {:?}", id);
 
-        cursor.into_inner()
-    }
+    //     cursor.into_inner()
+    // }
 
     /// decode a request from the frame, this would return the req raw bufer
     /// you need to deserialized from it into the real type
