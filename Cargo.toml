@@ -17,6 +17,7 @@ description = "General client server framework for Rust based on coroutine."
 [dependencies]
 log = "0.4"
 may = "0.3"
+arrayvec = "0.4"
 byteorder = "1"
 crossbeam = "0.7"
 co_waiter = { git = "https://github.com/Xudong-Huang/co_waiter.git" }

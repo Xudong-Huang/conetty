@@ -2,16 +2,17 @@ use std::io::IoSlice;
 use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
+use arrayvec::ArrayVec;
 use crossbeam::queue::SegQueue;
 
 struct VecBufs {
     block: usize,
     pos: usize,
-    bufs: Vec<Vec<u8>>,
+    bufs: ArrayVec<[Vec<u8>; 32]>,
 }
 
 impl VecBufs {
-    fn new(bufs: Vec<Vec<u8>>) -> Self {
+    fn new(bufs: ArrayVec<[Vec<u8>; 32]>) -> Self {
         VecBufs {
             block: 0,
             pos: 0,
@@ -19,8 +20,8 @@ impl VecBufs {
         }
     }
 
-    fn get_io_slice(&self) -> Vec<IoSlice<'_>> {
-        let mut ret = Vec::with_capacity(self.bufs.len());
+    fn get_io_slice(&self) -> ArrayVec<[IoSlice<'_>; 32]> {
+        let mut ret = ArrayVec::new();
         let first = IoSlice::new(&self.bufs[self.block][self.pos..]);
         ret.push(first);
         for buf in self.bufs.iter().skip(self.block + 1) {
@@ -30,15 +31,15 @@ impl VecBufs {
     }
 
     fn advance(&mut self, n: usize) {
-        let mut lefted = n;
+        let mut left = n;
         for buf in self.bufs.iter() {
             let len = buf.len() - self.pos;
-            if lefted >= len {
-                lefted -= len;
+            if left >= len {
+                left -= len;
                 self.block += 1;
                 self.pos = 0;
             } else {
-                self.pos += lefted;
+                self.pos += left;
                 break;
             }
         }
@@ -48,7 +49,8 @@ impl VecBufs {
         self.block == self.bufs.len()
     }
 
-    fn to_writer<W: Write>(mut self, writer: &mut W) -> std::io::Result<()> {
+    // write all data from the vecs to the writer
+    fn write_all<W: Write>(mut self, writer: &mut W) -> std::io::Result<()> {
         while !self.is_empty() {
             let n = writer.write_vectored(&self.get_io_slice())?;
             self.advance(n);
@@ -84,14 +86,20 @@ impl<W: Write> QueuedWriter<W> {
             let writer = unsafe { &mut *(&self.writer as *const _ as *mut W) };
 
             loop {
-                let mut totoal_data = Vec::with_capacity(1024);
-                while let Ok(data) = self.data_queue.pop() {
-                    totoal_data.push(data);
-                    cnt += 1;
+                let mut totoal_data = ArrayVec::new();
+                let mut pack_num = 0;
+                while pack_num < 32 {
+                    if let Ok(data) = self.data_queue.pop() {
+                        totoal_data.push(data);
+                        cnt += 1;
+                        pack_num += 1;
+                    } else {
+                        break;
+                    }
                 }
 
                 let io_bufs = VecBufs::new(totoal_data);
-                if let Err(e) = io_bufs.to_writer(writer) {
+                if let Err(e) = io_bufs.write_all(writer) {
                     // FIXME: handle the error
                     error!("QueuedWriter failed, err={}", e);
                 }
