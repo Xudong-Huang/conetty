@@ -34,7 +34,7 @@ impl VecBufs {
 
     fn advance(&mut self, n: usize) {
         let mut left = n;
-        for buf in self.bufs.iter() {
+        for buf in self.bufs[self.block..].iter() {
             let len = buf.len() - self.pos;
             if left >= len {
                 left -= len;
