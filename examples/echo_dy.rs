@@ -82,15 +82,14 @@ pub trait RpcRegister: conetty::Client {
     // should use a path of dynamic library as input
     fn register(&self, path: &str) -> Result<(), conetty::Error> {
         use bincode as encode;
-        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id, 0 for registry
         let id = 0u64;
-        encode::serialize_into(&mut req, &id, Infinite)
+        encode::serialize_into(&mut req, &id)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // serialize the path
-        encode::serialize_into(&mut req, path, Infinite)
+        encode::serialize_into(&mut req, path)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
         let rsp_frame = self.call_service(req)?;
@@ -131,31 +130,30 @@ fn dispatch_req(
     rsp: &mut conetty::RspBuf,
 ) -> Result<(), conetty::WireError> {
     use bincode as encode;
-    use bincode::Infinite;
     use std::io::Cursor;
 
     let mut input = Cursor::new(req);
 
     // deserialize the request
-    let _id: u64 = encode::deserialize_from(&mut input, Infinite)
+    let _id: u64 = encode::deserialize_from(&mut input)
         .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
     debug_assert_eq!(_id, req_id);
 
     // dispatch call the service
     if req_id == token_id!(echo) {
         // 0 => {
-        let (data,): (String,) = encode::deserialize_from(&mut input, Infinite)
+        let (data,): (String,) = encode::deserialize_from(&mut input)
             .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         let ret = echo(data);
         // serialize the result
-        encode::serialize_into(rsp, &ret, Infinite)
+        encode::serialize_into(rsp, &ret)
             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
     } else if req_id == token_id!(add) {
-        let (x, y): (u32, u32) = encode::deserialize_from(&mut input, Infinite)
+        let (x, y): (u32, u32) = encode::deserialize_from(&mut input)
             .map_err(|e| conetty::WireError::ServerDeserialize(e.to_string()))?;
         let ret = add(x, y);
         // serialize the result
-        encode::serialize_into(rsp, &ret, Infinite)
+        encode::serialize_into(rsp, &ret)
             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
     } else {
         unreachable!("unkown req_id = {}", req_id);
@@ -173,16 +171,15 @@ pub fn get_dispatch_register() -> &'static [(u64, DispatchFn)] {
 pub trait RpcClient: conetty::Client {
     fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
         use bincode as encode;
-        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id
         let id = token_id!(echo);
-        encode::serialize_into(&mut req, &id, Infinite)
+        encode::serialize_into(&mut req, &id)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // serialize the para
         let para = (arg0,);
-        encode::serialize_into(&mut req, &para, Infinite)
+        encode::serialize_into(&mut req, &para)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
         let rsp_frame = self.call_service(req)?;
@@ -193,16 +190,15 @@ pub trait RpcClient: conetty::Client {
 
     fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use bincode as encode;
-        use bincode::Infinite;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the function id
         let id = token_id!(add);
-        encode::serialize_into(&mut req, &id, Infinite)
+        encode::serialize_into(&mut req, &id)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // serialize the para
         let para = (arg0, arg1);
-        encode::serialize_into(&mut req, &para, Infinite)
+        encode::serialize_into(&mut req, &para)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
         let rsp_frame = self.call_service(req)?;
@@ -219,7 +215,7 @@ impl RpcClient for conetty::TcpClient {}
 
 fn main() {
     use conetty::MultiplexClient;
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let addr = ("127.0.0.1", 4000);
     let server = RpcServer::start(&addr).unwrap();

@@ -42,13 +42,12 @@ impl EchoRpcClient {
 
     pub fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
         use bincode as encode;
-        use bincode::Infinite;
         use conetty::Client;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
         let para = EchoRpcEnum::hello((arg0,));
-        encode::serialize_into(&mut req, &para, Infinite)
+        encode::serialize_into(&mut req, &para)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
         let rsp_frame = self.0.call_service(req)?;
@@ -59,13 +58,12 @@ impl EchoRpcClient {
 
     pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use bincode as encode;
-        use bincode::Infinite;
         use conetty::Client;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
         let para = EchoRpcEnum::add((arg0, arg1));
-        encode::serialize_into(&mut req, &para, Infinite)
+        encode::serialize_into(&mut req, &para)
             .map_err(|e| conetty::Error::ClientSerialize(e.to_string()))?;
         // call the server
         let rsp_frame = self.0.call_service(req)?;
@@ -87,7 +85,6 @@ impl<T: EchoRpc> ::std::ops::Deref for RpcServer<T> {
 impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> {
     fn service(&self, req: &[u8], rsp: &mut conetty::RspBuf) -> Result<(), conetty::WireError> {
         use bincode as encode;
-        use bincode::Infinite;
 
         // deserialize the request
         let req: EchoRpcEnum = encode::deserialize(req)
@@ -98,7 +95,7 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
                 match ::std::panic::catch_unwind(|| self.echo(arg0)) {
                     Ok(ret) => {
                         // serialize the result
-                        encode::serialize_into(rsp, &ret, Infinite)
+                        encode::serialize_into(rsp, &ret)
                             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
                     }
                     Err(_) => {
@@ -113,7 +110,7 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
                 match ::std::panic::catch_unwind(|| self.add(arg0, arg1)) {
                     Ok(ret) => {
                         // serialize the result
-                        encode::serialize_into(rsp, &ret, Infinite)
+                        encode::serialize_into(rsp, &ret)
                             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
                     }
                     Err(_) => {
@@ -139,7 +136,7 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe + 'static> RpcServer<T> {
 // ------------------------------------------------------------------------------------------------
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let addr = ("127.0.0.1", 4000);
     let server = RpcServer(Echo).start(&addr).unwrap();

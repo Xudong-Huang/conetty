@@ -28,6 +28,7 @@ pub struct Frame {
 impl Frame {
     /// decode a frame from the reader
     pub fn decode_from<R: Read>(r: &mut R) -> io::Result<Self> {
+        use std::mem::MaybeUninit;
         let id = r.read_u64::<BigEndian>()?;
         info!("decode id = {:?}", id);
 
@@ -40,8 +41,12 @@ impl Frame {
             return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
-        let mut data = Vec::with_capacity(len as usize);
-        unsafe { data.set_len(len as usize) }; // avoid one memset
+        let mut data = MaybeUninit::new(Vec::with_capacity(len as usize));
+        let mut data = unsafe {
+            // avoid one memset
+            (*data.as_mut_ptr()).set_len(len as usize);
+            data.assume_init()
+        };
         r.read_exact(&mut data[16..])?;
 
         // blow can be skipped, we don't need them in the buffer

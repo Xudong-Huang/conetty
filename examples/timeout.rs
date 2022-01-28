@@ -17,7 +17,7 @@ impl Server for Echo {
 }
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();

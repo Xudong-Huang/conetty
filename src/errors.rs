@@ -1,4 +1,3 @@
-use std::error::Error as StdError;
 use std::{fmt, io};
 
 /// All errors that can occur during the use of tarpc.
@@ -37,39 +36,13 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::ClientDeserialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
-            Error::ClientSerialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
-            Error::ServerDeserialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
-            Error::ServerSerialize(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
-            Error::Status(ref e) => write!(f, r#"{}: "{}""#, self.description(), e),
-            Error::Timeout => write!(f, r#"{}"#, self.description()),
+            Error::ClientDeserialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
+            Error::ClientSerialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
+            Error::ServerDeserialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
+            Error::ServerSerialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
+            Error::Status(ref e) => write!(f, r#"{}: "{}""#, self, e),
+            Error::Timeout => write!(f, r#"{}"#, self),
             Error::Io(ref e) => fmt::Display::fmt(e, f),
-        }
-    }
-}
-
-impl StdError for Error {
-    fn description(&self) -> &str {
-        match *self {
-            Error::ClientDeserialize(_) => "The client failed to deserialize the server response.",
-            Error::ClientSerialize(_) => "The client failed to serialize the request.",
-            Error::ServerDeserialize(_) => "The server failed to deserialize the request.",
-            Error::ServerSerialize(_) => "The server failed to serialize the response.",
-            Error::Status(_) => "The server returns an error code.",
-            Error::Timeout => "The client get the server reply response timeout.",
-            Error::Io(ref e) => e.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&dyn StdError> {
-        match *self {
-            Error::ClientDeserialize(_)
-            | Error::ClientSerialize(_)
-            | Error::ServerDeserialize(_)
-            | Error::ServerSerialize(_)
-            | Error::Status(_)
-            | Error::Timeout => None,
-            Error::Io(ref e) => e.source(),
         }
     }
 }

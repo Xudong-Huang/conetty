@@ -24,7 +24,7 @@ fn main() {
             .unwrap();
         let data = client.call_service(buf).unwrap();
         let rsp = data.decode_rsp().unwrap();
-        println!("recv = {:?}", str::from_utf8(&rsp).unwrap());
+        println!("recv = {:?}", str::from_utf8(rsp).unwrap());
     }
 
     unsafe { server.coroutine().cancel() };

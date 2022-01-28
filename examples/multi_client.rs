@@ -14,8 +14,8 @@ impl Server for Echo {
 }
 
 fn main() {
-    env_logger::init().unwrap();
-    may::config().set_workers(4).set_io_workers(4);
+    env_logger::init();
+    may::config().set_workers(4);
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
