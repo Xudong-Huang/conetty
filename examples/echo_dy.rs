@@ -156,7 +156,7 @@ fn dispatch_req(
         encode::serialize_into(rsp, &ret)
             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
     } else {
-        unreachable!("unkown req_id = {}", req_id);
+        unreachable!("unknown req_id = {}", req_id);
     }
 }
 
@@ -233,7 +233,7 @@ fn main() {
         println!("recv = {:?}", data);
     }
 
-    client.register("asdsfafdasdf").unwrap();
+    client.register("file_path").unwrap();
 
     for i in 0..10 {
         let s = format!("Hello World! id={}", i);

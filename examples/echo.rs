@@ -99,7 +99,7 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
                             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
                     }
                     Err(_) => {
-                        // panic happend inside!
+                        // panic happened inside!
                         Err(conetty::WireError::Status(
                             "rpc panicked in server!".to_owned(),
                         ))
@@ -114,7 +114,7 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe> conetty::Server for RpcServer<T> 
                             .map_err(|e| conetty::WireError::ServerSerialize(e.to_string()))
                     }
                     Err(_) => {
-                        // panic happend inside!
+                        // panic happened inside!
                         Err(conetty::WireError::Status(
                             "rpc panicked in server!".to_owned(),
                         ))

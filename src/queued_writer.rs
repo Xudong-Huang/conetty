@@ -88,11 +88,11 @@ impl<W: Write> QueuedWriter<W> {
             let writer = unsafe { &mut *(&self.writer as *const _ as *mut W) };
 
             loop {
-                let mut totoal_data = ArrayVec::new();
+                let mut total_data = ArrayVec::new();
                 let mut pack_num = 0;
                 while pack_num < MAX_VEC_BUF {
                     if let Some(data) = self.data_queue.pop() {
-                        totoal_data.push(data);
+                        total_data.push(data);
                         cnt += 1;
                         pack_num += 1;
                     } else {
@@ -100,7 +100,7 @@ impl<W: Write> QueuedWriter<W> {
                     }
                 }
 
-                let io_bufs = VecBufs::new(totoal_data);
+                let io_bufs = VecBufs::new(total_data);
                 if let Err(e) = io_bufs.write_all(writer) {
                     // FIXME: handle the error
                     error!("QueuedWriter failed, err={}", e);

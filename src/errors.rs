@@ -59,7 +59,7 @@ impl From<WireError> for Error {
             WireError::ServerDeserialize(s) => Error::ServerDeserialize(s),
             WireError::ServerSerialize(s) => Error::ServerSerialize(s),
             WireError::Status(s) => Error::Status(s),
-            _ => unreachable!("unkonw WireError type received"),
+            _ => unreachable!("unknown WireError type received"),
         }
     }
 }

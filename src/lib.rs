@@ -41,7 +41,7 @@ pub trait Server: Send + Sync + Sized + 'static {
     /// the real request should be deserialized from the input
     /// the real response should be serialized into the RspBuf
     /// if deserialize/serialize error happened, return an Err(WireError)
-    /// application error should be encap in the RspBuf
+    /// application error should be encapsulated into the RspBuf
     /// here passed in a self ref to impl stateful service if you want
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError>;
 }

@@ -43,7 +43,7 @@ pub trait UdpServer: Server {
                         info!("send_to: len={:?} addr={:?}", data.len(), addr);
 
                         // send the result back to client
-                        // udp no need to proect by a mutex, each send would be one frame
+                        // udp no need to protect by a mutex, each send would be one frame
                         let s = sock.lock().unwrap();
                         match s.send_to(&data, addr) {
                             Ok(_) => {}

@@ -61,7 +61,7 @@ fn main() {
 ```
 
 ## Additional Features
-- Mulitiplex for a single connection
+- Multiplex for a single connection
 - support TCP/UDP
 - Run any number of clients and services
 

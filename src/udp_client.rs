@@ -65,7 +65,7 @@ impl Client for UdpClient {
             let rsp_frame = Frame::decode_from(&mut Cursor::new(&buf))
                 .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
-            // disgard the rsp that is is not belong to us
+            // discard the rsp that is is not belong to us
             if rsp_frame.id == id {
                 info!("get response id = {}", id);
                 return Ok(rsp_frame);

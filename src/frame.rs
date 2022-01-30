@@ -69,14 +69,14 @@ impl Frame {
     //     cursor.into_inner()
     // }
 
-    /// decode a request from the frame, this would return the req raw bufer
+    /// decode a request from the frame, this would return the req raw buffer
     /// you need to deserialized from it into the real type
     pub fn decode_req(&self) -> &[u8] {
         // skip the frame head
         &self.data[16..]
     }
 
-    /// decode a response from the frame, this would return the rsp raw bufer
+    /// decode a response from the frame, this would return the rsp raw buffer
     /// you need to deserialized from it into the real type
     pub fn decode_rsp(&self) -> Result<&[u8], Error> {
         use Error::*;
@@ -213,7 +213,7 @@ impl RspBuf {
         cursor.write_u64::<BigEndian>(len).unwrap();
         // write the data into the writer
         match ty {
-            0 => {} // the normal ret already writed
+            0 => {} // the normal ret already wrote
             SERVER_POLL_ENCODE => {
                 // the server need to poll the client, will be filtered out by multiplex_client
             }
@@ -221,7 +221,7 @@ impl RspBuf {
                 cursor.get_mut().resize(len as usize + 25, 0);
                 cursor.write_all(data).unwrap();
             }
-            _ => unreachable!("unkown rsp type"),
+            _ => unreachable!("unknown rsp type"),
         }
 
         cursor.into_inner()
