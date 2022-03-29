@@ -20,16 +20,15 @@ may = "0.3"
 arrayvec = "0.7"
 byteorder = "1"
 crossbeam = "0.8"
-co_waiter = { git = "https://github.com/Xudong-Huang/co_waiter.git" }
+may_waiter = "0.1"
 co_managed =  { git = "https://github.com/Xudong-Huang/co_managed.git" }
 
 [dev-dependencies]
 serde = "1"
 bincode = "1"
-token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
-token_id-plugins = { git = "https://github.com/Xudong-Huang/token_id.git" }
 env_logger = "0.9"
 serde_derive = "1"
+token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 
 [profile.release]
 opt-level=3

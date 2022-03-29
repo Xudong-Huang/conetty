@@ -1,8 +1,6 @@
 #[macro_use]
 extern crate token_id;
 #[macro_use]
-extern crate token_id_plugins;
-#[macro_use]
 extern crate log;
 
 use std::collections::HashMap;

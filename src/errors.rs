@@ -36,12 +36,12 @@ pub enum Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match *self {
-            Error::ClientDeserialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
-            Error::ClientSerialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
-            Error::ServerDeserialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
-            Error::ServerSerialize(ref e) => write!(f, r#"{}: "{}""#, self, e),
-            Error::Status(ref e) => write!(f, r#"{}: "{}""#, self, e),
-            Error::Timeout => write!(f, r#"{}"#, self),
+            Error::ClientDeserialize(ref e) => write!(f, r#"{:?}: "{}""#, self, e),
+            Error::ClientSerialize(ref e) => write!(f, r#"{:?}: "{}""#, self, e),
+            Error::ServerDeserialize(ref e) => write!(f, r#"{:?}: "{}""#, self, e),
+            Error::ServerSerialize(ref e) => write!(f, r#"{:?}: "{}""#, self, e),
+            Error::Status(ref e) => write!(f, r#"{:?}: "{}""#, self, e),
+            Error::Timeout => write!(f, r#"{:?}"#, self),
             Error::Io(ref e) => fmt::Display::fmt(e, f),
         }
     }

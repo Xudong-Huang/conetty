@@ -6,9 +6,10 @@ use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::queued_writer::QueuedWriter;
 use crate::Client;
-use co_waiter::token_waiter::TokenWaiter;
+
 use may::net::TcpStream;
 use may::{coroutine, go};
+use may_waiter::TokenWaiter;
 
 #[derive(Debug)]
 pub struct MultiplexClient {
@@ -63,7 +64,7 @@ impl MultiplexClient {
                     // set the wait req
                     let id = rsp_frame.id as usize;
                     // ignore the cases that failed to find out a req waiter
-                    TokenWaiter::set_rsp(id, rsp_frame);
+                    TokenWaiter::set_rsp(id.into(), rsp_frame);
                     // .unwrap_or_else(|_| panic!("failed to set rsp: id={}", id));
                 }
             }
@@ -86,11 +87,11 @@ impl MultiplexClient {
 impl Client for MultiplexClient {
     fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let waiter = TokenWaiter::new();
-        let waiter = std::pin::Pin::new(&waiter);
-        let id = waiter.get_id();
-        info!("request id = {}", id);
+        let id = waiter.id().unwrap();
+        info!("request id = {:?}", id);
 
         // send the request
+        let id: usize = id.into();
         let buf = req.finish(id as u64);
 
         self.sock.write(buf);
