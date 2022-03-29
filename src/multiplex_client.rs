@@ -5,7 +5,6 @@ use std::time::Duration;
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::queued_writer::QueuedWriter;
-use crate::Client;
 
 use may::net::TcpStream;
 use may::{coroutine, go};
@@ -84,8 +83,8 @@ impl MultiplexClient {
     }
 }
 
-impl Client for MultiplexClient {
-    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
+impl MultiplexClient {
+    pub fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let waiter = TokenWaiter::new();
         let id = waiter.id().unwrap();
         info!("request id = {:?}", id);

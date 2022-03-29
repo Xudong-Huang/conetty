@@ -15,6 +15,14 @@ pub use tcp_client::TcpClient;
 #[doc(hidden)]
 pub use udp_client::UdpClient;
 
+#[cfg(unix)]
+#[doc(hidden)]
+pub use uds_client::UdsClient;
+
+#[cfg(unix)]
+#[doc(hidden)]
+pub use server::UdsServer;
+
 macro_rules! t {
     ($e: expr) => {
         match $e {
@@ -32,7 +40,7 @@ pub trait Client {
     /// call the server
     /// the request must be encoded into the ReqBuf
     /// the response is the raw frame, you should parsing it into final response
-    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error>;
+    fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error>;
 }
 
 /// must impl this trait for your server
@@ -54,6 +62,9 @@ mod multiplex_client;
 mod queued_writer;
 /// Provides server framework.
 mod server;
+
 mod tcp_client;
 /// Provides client impl.
 mod udp_client;
+#[cfg(unix)]
+mod uds_client;

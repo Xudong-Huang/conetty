@@ -1,5 +1,6 @@
 use std::io::{self, BufReader, Cursor};
 use std::net::ToSocketAddrs;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::frame::{Frame, RspBuf};
@@ -7,6 +8,7 @@ use crate::queued_writer::QueuedWriter;
 use crate::Server;
 use co_managed::Manager;
 use may::net::{TcpListener, UdpSocket};
+use may::os::unix::net::UnixListener;
 use may::sync::Mutex;
 use may::{coroutine, go};
 
@@ -111,5 +113,71 @@ pub trait TcpServer: Server {
     }
 }
 
+/// Provides a function for starting the unix domain socket service.
+#[cfg(unix)]
+pub trait UdsServer: Server {
+    /// Spawns the service, binding to the given address
+    /// return a coroutine that you can cancel it when need to stop the service
+    fn start<P: AsRef<Path>>(self, path: P) -> io::Result<coroutine::JoinHandle<()>> {
+        struct AutoDrop(UnixListener, PathBuf);
+        impl Drop for AutoDrop {
+            fn drop(&mut self) {
+                std::fs::remove_file(&self.1).ok();
+            }
+        }
+
+        std::fs::remove_file(&path).ok();
+        let listener = AutoDrop(UnixListener::bind(&path)?, path.as_ref().to_owned());
+        go!(
+            coroutine::Builder::new().name("Unix Socket Server".to_owned()),
+            move || {
+                let server = Arc::new(self);
+                let manager = Manager::new();
+                for stream in listener.0.incoming() {
+                    let stream = t!(stream);
+                    let server = server.clone();
+                    manager.add(move |_| {
+                        let rs = stream.try_clone().expect("failed to clone stream");
+                        // the read half of the stream
+                        let mut rs = BufReader::new(rs);
+                        // the write half need to be protected by mutex
+                        // for that coroutine io obj can't shared safely
+                        let ws = Arc::new(QueuedWriter::new(stream));
+
+                        loop {
+                            let req = match Frame::decode_from(&mut rs) {
+                                Ok(r) => r,
+                                Err(ref e) => {
+                                    if e.kind() == io::ErrorKind::UnexpectedEof {
+                                        info!("uds server decode req: connection closed");
+                                    } else {
+                                        error!("uds server decode req: err = {:?}", e);
+                                    }
+                                    break;
+                                }
+                            };
+
+                            info!("get request: id={:?}", req.id);
+                            let w_stream = ws.clone();
+                            let server = server.clone();
+                            go!(move || {
+                                let mut rsp = RspBuf::new();
+                                let ret = server.service(req.decode_req(), &mut rsp);
+                                let data = rsp.finish(req.id, ret);
+
+                                info!("send rsp: id={}", req.id);
+                                // send the result back to client
+                                w_stream.write(data);
+                            });
+                        }
+                    });
+                }
+            }
+        )
+    }
+}
+
 impl<T: Server> UdpServer for T {}
 impl<T: Server> TcpServer for T {}
+#[cfg(unix)]
+impl<T: Server> UdsServer for T {}

@@ -17,7 +17,7 @@ impl Server for Echo {
 fn echo() {
     let addr = ("127.0.0.1", 2000);
     let server = Echo.start(&addr).unwrap();
-    let client = TcpClient::connect(addr).unwrap();
+    let mut client = TcpClient::connect(addr).unwrap();
 
     let mut req = ReqBuf::new();
     req.write(&vec![5u8; 16]).unwrap();
@@ -61,19 +61,19 @@ fn tcp_timeout() {
 
 #[test]
 fn multi_client() {
-    use std::mem;
     use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::sync::Arc;
 
     let addr = ("127.0.0.1", 3000);
     let server = Echo.start(&addr).unwrap();
 
-    let count = AtomicUsize::new(0);
+    let count = Arc::new(AtomicUsize::new(0));
 
     let mut vec = vec![];
     for i in 0..8 {
-        let count_ref: &'static AtomicUsize = unsafe { mem::transmute(&count) };
+        let count_ref = count.clone();
         let h = go!(move || {
-            let client = TcpClient::connect(addr).unwrap();
+            let mut client = TcpClient::connect(addr).unwrap();
             for j in 0..10 {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();

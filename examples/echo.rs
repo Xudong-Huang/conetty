@@ -40,7 +40,7 @@ impl EchoRpcClient {
         self.0.set_timeout(timeout)
     }
 
-    pub fn echo(&self, arg0: String) -> Result<String, conetty::Error> {
+    pub fn echo(&mut self, arg0: String) -> Result<String, conetty::Error> {
         use bincode as encode;
         use conetty::Client;
 
@@ -56,7 +56,7 @@ impl EchoRpcClient {
         encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
     }
 
-    pub fn add(&self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
+    pub fn add(&mut self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use bincode as encode;
         use conetty::Client;
 

@@ -1,28 +1,32 @@
 use std::io::{self, BufReader, Write};
-use std::net::ToSocketAddrs;
+use std::path::Path;
 use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::Client;
-use may::net::TcpStream;
+
+use may::os::unix::net::UnixStream;
 
 #[derive(Debug)]
-pub struct TcpClient {
+pub struct UdsClient {
     // each request would have a unique id
     id: u64,
     // the connection
-    sock: BufReader<TcpStream>,
+    sock: BufReader<UnixStream>,
 }
 
-impl TcpClient {
+// the UdsClient is Send but not Sync
+unsafe impl Send for UdsClient {}
+
+impl UdsClient {
     /// connect to the server address
-    pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<TcpClient> {
+    pub fn connect<P: AsRef<Path>>(path: P) -> io::Result<UdsClient> {
         // this would bind a random port by the system
-        let sock = TcpStream::connect(addr)?;
+        let sock = UnixStream::connect(path)?;
         sock.set_read_timeout(Some(Duration::from_secs(5))).unwrap();
 
-        Ok(TcpClient {
+        Ok(UdsClient {
             id: 0,
             sock: BufReader::with_capacity(1024, sock),
         })
@@ -35,7 +39,7 @@ impl TcpClient {
     }
 }
 
-impl Client for TcpClient {
+impl Client for UdsClient {
     fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error> {
         let id = self.id;
         self.id += 1;

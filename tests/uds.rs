@@ -1,7 +1,9 @@
+#![cfg(unix)]
+
 use std::io::Write;
 use std::time::Duration;
 
-use conetty::{Client, ReqBuf, RspBuf, Server, UdpClient, UdpServer, WireError};
+use conetty::{Client, ReqBuf, RspBuf, Server, UdsClient, UdsServer, WireError};
 use may::{coroutine, go};
 
 struct Echo;
@@ -15,9 +17,9 @@ impl Server for Echo {
 
 #[test]
 fn echo() {
-    let addr = ("127.0.0.1", 2000);
-    let server = Echo.start(&addr).unwrap();
-    let mut client = UdpClient::connect(addr).unwrap();
+    let path = "/tmp/test_uds";
+    let server = Echo.start(path).unwrap();
+    let mut client = UdsClient::connect(path).unwrap();
 
     let mut req = ReqBuf::new();
     req.write(&vec![5u8; 16]).unwrap();
@@ -30,7 +32,7 @@ fn echo() {
 }
 
 #[test]
-fn tcp_timeout() {
+fn uds_timeout() {
     struct Echo;
 
     impl Server for Echo {
@@ -41,9 +43,9 @@ fn tcp_timeout() {
         }
     }
 
-    let addr = ("127.0.0.1", 4000);
-    let server = Echo.start(&addr).unwrap();
-    let mut client = UdpClient::connect(addr).unwrap();
+    let path = "/tmp/test_uds1";
+    let server = Echo.start(path).unwrap();
+    let mut client = UdsClient::connect(path).unwrap();
 
     client.set_timeout(Duration::from_millis(500));
     let mut req = ReqBuf::new();
@@ -64,8 +66,8 @@ fn multi_client() {
     use std::sync::atomic::{AtomicUsize, Ordering};
     use std::sync::Arc;
 
-    let addr = ("127.0.0.1", 3000);
-    let server = Echo.start(&addr).unwrap();
+    let path = "/tmp/test_uds2";
+    let server = Echo.start(path).unwrap();
 
     let count = Arc::new(AtomicUsize::new(0));
 
@@ -73,7 +75,7 @@ fn multi_client() {
     for i in 0..8 {
         let count_ref = count.clone();
         let h = go!(move || {
-            let mut client = UdpClient::connect(addr).unwrap();
+            let mut client = UdsClient::connect(path).unwrap();
             for j in 0..10 {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();

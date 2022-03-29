@@ -16,7 +16,7 @@ impl Server for Echo {
 fn main() {
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
-    let client = TcpClient::connect(addr).unwrap();
+    let mut client = TcpClient::connect(addr).unwrap();
 
     for i in 0..10 {
         let mut buf = ReqBuf::new();

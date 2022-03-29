@@ -1,5 +1,3 @@
-use std::cell::RefCell;
-use std::cell::UnsafeCell;
 use std::io::{self, Cursor};
 use std::net::ToSocketAddrs;
 use std::time::Duration;
@@ -12,11 +10,11 @@ use may::net::UdpSocket;
 #[derive(Debug)]
 pub struct UdpClient {
     // each request would have a unique id
-    id: RefCell<u64>,
+    id: u64,
     // the connection
     sock: UdpSocket,
     // send/recv buf
-    buf: UnsafeCell<Vec<u8>>,
+    buf: Vec<u8>,
 }
 
 // the UdpClient is Send but not Sync
@@ -32,8 +30,8 @@ impl UdpClient {
 
         Ok(UdpClient {
             sock,
-            id: RefCell::new(0),
-            buf: UnsafeCell::new(vec![0; 1024]),
+            id: 0,
+            buf: vec![0; 1024],
         })
     }
 
@@ -45,24 +43,20 @@ impl UdpClient {
 }
 
 impl Client for UdpClient {
-    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
-        let id = {
-            let mut id = self.id.borrow_mut();
-            *id += 1;
-            *id
-        };
+    fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error> {
+        let id = self.id;
+        self.id += 1;
         info!("request id = {}", id);
 
         // send the data to server
         self.sock.send(&(req.finish(id))).map_err(Error::from)?;
 
-        let buf = unsafe { &mut *self.buf.get() };
         // read the response
         loop {
-            self.sock.recv(buf).map_err(Error::from)?;
+            self.sock.recv(&mut self.buf).map_err(Error::from)?;
 
             // deserialize the rsp
-            let rsp_frame = Frame::decode_from(&mut Cursor::new(&buf))
+            let rsp_frame = Frame::decode_from(&mut Cursor::new(&self.buf))
                 .map_err(|e| Error::ClientDeserialize(e.to_string()))?;
 
             // discard the rsp that is is not belong to us

@@ -20,7 +20,7 @@ fn tcp_echo(b: &mut Bencher) {
     may::config().set_workers(2).set_pool_capacity(1000);
     let addr = ("127.0.0.1", 2000);
     let server = Echo.start(&addr).unwrap();
-    let client = TcpClient::connect(addr).unwrap();
+    let mut client = TcpClient::connect(addr).unwrap();
 
     b.iter(|| {
         let mut req = ReqBuf::new();
