@@ -5,6 +5,7 @@ use std::time::Duration;
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::queued_writer::QueuedWriter;
+use crate::Client;
 
 use may::net::TcpStream;
 use may::{coroutine, go};
@@ -61,10 +62,8 @@ impl MultiplexClient {
                     info!("receive rsp, id={}", rsp_frame.id);
 
                     // set the wait req
-                    let id = rsp_frame.id as usize;
-                    // ignore the cases that failed to find out a req waiter
-                    TokenWaiter::set_rsp(id.into(), rsp_frame);
-                    // .unwrap_or_else(|_| panic!("failed to set rsp: id={}", id));
+                    let id = unsafe { may_waiter::ID::from_usize(rsp_frame.id as usize) };
+                    TokenWaiter::set_rsp(id, rsp_frame);
                 }
             }
         )?;
@@ -83,8 +82,8 @@ impl MultiplexClient {
     }
 }
 
-impl MultiplexClient {
-    pub fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
+impl Client for MultiplexClient {
+    fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let waiter = TokenWaiter::new();
         let id = waiter.id().unwrap();
         info!("request id = {:?}", id);

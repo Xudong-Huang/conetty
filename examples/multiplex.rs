@@ -2,7 +2,7 @@ use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 
-use conetty::{MultiplexClient, ReqBuf, RspBuf, Server, TcpServer, WireError};
+use conetty::{MultiplexClient, ReqBuf, RspBuf, Server, Client, TcpServer, WireError};
 use may::go;
 
 struct Echo;

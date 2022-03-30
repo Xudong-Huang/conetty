@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::str;
 
-use conetty::{Client, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
+use conetty::{SimpleClient, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
 
 struct Echo;
 

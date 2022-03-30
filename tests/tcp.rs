@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::time::Duration;
 
-use conetty::{Client, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
+use conetty::{SimpleClient, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
 use may::{coroutine, go};
 
 struct Echo;

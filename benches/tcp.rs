@@ -3,7 +3,7 @@ extern crate test;
 
 use std::io::Write;
 
-use conetty::{Client, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
+use conetty::{SimpleClient, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
 use test::Bencher;
 
 struct Echo;

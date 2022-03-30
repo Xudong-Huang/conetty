@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
-use crate::Client;
+use crate::SimpleClient;
 use may::net::TcpStream;
 
 #[derive(Debug)]
@@ -35,7 +35,7 @@ impl TcpClient {
     }
 }
 
-impl Client for TcpClient {
+impl SimpleClient for TcpClient {
     fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error> {
         let id = self.id;
         self.id += 1;

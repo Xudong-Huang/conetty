@@ -42,7 +42,7 @@ impl EchoRpcClient {
 
     pub fn echo(&mut self, arg0: String) -> Result<String, conetty::Error> {
         use bincode as encode;
-        use conetty::Client;
+        use conetty::SimpleClient;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para
@@ -58,7 +58,7 @@ impl EchoRpcClient {
 
     pub fn add(&mut self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
         use bincode as encode;
-        use conetty::Client;
+        use conetty::SimpleClient;
 
         let mut req = conetty::ReqBuf::new();
         // serialize the para

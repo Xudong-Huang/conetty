@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
-use crate::Client;
+use crate::SimpleClient;
 
 use may::os::unix::net::UnixStream;
 
@@ -39,7 +39,7 @@ impl UdsClient {
     }
 }
 
-impl Client for UdsClient {
+impl SimpleClient for UdsClient {
     fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error> {
         let id = self.id;
         self.id += 1;
