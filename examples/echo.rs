@@ -53,7 +53,7 @@ impl EchoRpcClient {
         let rsp_frame = self.0.call_service(req)?;
         let rsp = rsp_frame.decode_rsp()?;
         // deserialized the response
-        encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
+        encode::deserialize(rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
     }
 
     pub fn add(&mut self, arg0: u32, arg1: u32) -> Result<u32, conetty::Error> {
@@ -69,7 +69,7 @@ impl EchoRpcClient {
         let rsp_frame = self.0.call_service(req)?;
         let rsp = rsp_frame.decode_rsp()?;
         // deserialized the response
-        encode::deserialize(&rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
+        encode::deserialize(rsp).map_err(|e| conetty::Error::ClientDeserialize(e.to_string()))
     }
 }
 

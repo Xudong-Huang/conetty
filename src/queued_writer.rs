@@ -4,6 +4,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use arrayvec::ArrayVec;
 use crossbeam::queue::SegQueue;
+use may::sync::Mutex;
 
 const MAX_VEC_BUF: usize = 64;
 
@@ -65,28 +66,26 @@ impl VecBufs {
 pub struct QueuedWriter<W: Write> {
     data_count: AtomicUsize,
     data_queue: SegQueue<Vec<u8>>,
-    writer: W,
+    writer: Mutex<W>,
 }
-
-unsafe impl<W: Write + Send> Send for QueuedWriter<W> {}
-unsafe impl<W: Write + Sync> Sync for QueuedWriter<W> {}
 
 impl<W: Write> QueuedWriter<W> {
     pub fn new(writer: W) -> Self {
         QueuedWriter {
             data_count: AtomicUsize::new(0),
             data_queue: SegQueue::new(),
-            writer,
+            writer: Mutex::new(writer),
         }
     }
 
+    /// it's safe and efficient to call this API concurrently
     pub fn write(&self, data: Vec<u8>) {
         self.data_queue.push(data);
-        let mut cnt = self.data_count.fetch_add(1, Ordering::AcqRel);
-        if cnt == 0 {
-            #[allow(clippy::cast_ref_to_mut)]
-            let writer = unsafe { &mut *(&self.writer as *const _ as *mut W) };
-
+        self.data_count.fetch_add(1, Ordering::AcqRel);
+        // only allow the first write perform the write operation
+        // other concurrent writes would just push the data
+        if let Ok(mut writer) = self.writer.try_lock() {
+            let mut cnt = 0;
             loop {
                 let mut total_data = ArrayVec::new();
                 let mut pack_num = 0;
@@ -101,15 +100,17 @@ impl<W: Write> QueuedWriter<W> {
                 }
 
                 let io_bufs = VecBufs::new(total_data);
-                if let Err(e) = io_bufs.write_all(writer) {
+                if let Err(e) = io_bufs.write_all(&mut *writer) {
                     // FIXME: handle the error
                     error!("QueuedWriter failed, err={}", e);
                 }
 
+                // detect if there are more packet need to deal with
                 if self.data_count.fetch_sub(cnt, Ordering::AcqRel) == cnt {
                     break;
                 }
 
+                // restart over
                 cnt = 0;
             }
         }

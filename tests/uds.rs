@@ -3,7 +3,7 @@
 use std::io::Write;
 use std::time::Duration;
 
-use conetty::{SimpleClient, ReqBuf, RspBuf, Server, UdsClient, UdsServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, SimpleClient, UdsClient, UdsServer, WireError};
 use may::{coroutine, go};
 
 struct Echo;

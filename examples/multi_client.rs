@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use conetty::{SimpleClient, ReqBuf, RspBuf, Server, TcpClient, TcpServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, SimpleClient, TcpClient, TcpServer, WireError};
 use may::go;
 
 struct Echo;
@@ -28,12 +28,11 @@ fn main() {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();
                 match client.call_service(req) {
-                    // Ok(frame) => {
-                    //     let rsp = frame.decode_rsp().unwrap();
-                    //     println!("recv = {:?}", str::from_utf8(rsp).unwrap());
-                    // }
+                    Ok(frame) => {
+                        let rsp = frame.decode_rsp().unwrap();
+                        println!("recv = {:?}", std::str::from_utf8(rsp).unwrap());
+                    }
                     Err(err) => println!("recv err = {:?}", err),
-                    _ => {}
                 }
             }
             // ::std::mem::forget(client);

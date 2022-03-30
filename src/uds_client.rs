@@ -16,9 +16,6 @@ pub struct UdsClient {
     sock: BufReader<UnixStream>,
 }
 
-// the UdsClient is Send but not Sync
-unsafe impl Send for UdsClient {}
-
 impl UdsClient {
     /// connect to the server address
     pub fn connect<P: AsRef<Path>>(path: P) -> io::Result<UdsClient> {

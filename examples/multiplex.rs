@@ -2,7 +2,7 @@ use std::io::Write;
 use std::sync::Arc;
 use std::time::Duration;
 
-use conetty::{MultiplexClient, ReqBuf, RspBuf, Server, Client, TcpServer, WireError};
+use conetty::{Client, MultiplexClient, ReqBuf, RspBuf, Server, TcpServer, WireError};
 use may::go;
 
 struct Echo;
@@ -33,12 +33,11 @@ fn main() {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();
                 match client.call_service(req) {
-                    // Ok(frame) => {
-                    //     let rsp = frame.decode_rsp().unwrap();
-                    //     println!("recv = {:?}", str::from_utf8(rsp).unwrap());
-                    // }
                     Err(err) => println!("recv err = {:?}", err),
-                    _ => {}
+                    Ok(frame) => {
+                        let rsp = frame.decode_rsp().unwrap();
+                        log::info!("recv = {:?}", std::str::from_utf8(rsp).unwrap());
+                    }
                 }
             }
             println!("thread done, id={}", i);

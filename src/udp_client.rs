@@ -17,9 +17,6 @@ pub struct UdpClient {
     buf: Vec<u8>,
 }
 
-// the UdpClient is Send but not Sync
-unsafe impl Send for UdpClient {}
-
 impl UdpClient {
     /// connect to the server address
     pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<UdpClient> {
