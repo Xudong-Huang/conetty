@@ -81,11 +81,13 @@ impl<W: Write> QueuedWriter<W> {
     /// it's safe and efficient to call this API concurrently
     pub fn write(&self, data: Vec<u8>) {
         self.data_queue.push(data);
-        self.data_count.fetch_add(1, Ordering::AcqRel);
         // only allow the first write perform the write operation
         // other concurrent writes would just push the data
-        if let Ok(mut writer) = self.writer.try_lock() {
-            let mut cnt = 0;
+        let mut cnt = self.data_count.fetch_add(1, Ordering::AcqRel);
+        if cnt == 0 {
+            // in most cases this would not block since we have only one writer
+            let mut writer = self.writer.lock().unwrap();
+
             loop {
                 let mut total_data = ArrayVec::new();
                 let mut pack_num = 0;
