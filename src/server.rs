@@ -76,8 +76,7 @@ pub trait TcpServer: Server {
                         let rs = stream.try_clone().expect("failed to clone stream");
                         // the read half of the stream
                         let mut rs = BufReader::new(rs);
-                        // the write half need to be protected by mutex
-                        // for that coroutine io obj can't shared safely
+                        // the write half of the stream
                         let ws = Arc::new(QueuedWriter::new(stream));
 
                         loop {
