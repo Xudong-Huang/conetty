@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use conetty::{ReqBuf, RspBuf, Server, SimpleClient, StreamClient, TcpServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, StreamClient, TcpServer, WireError};
 use may::go;
 
 struct Echo;

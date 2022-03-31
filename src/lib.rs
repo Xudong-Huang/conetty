@@ -22,15 +22,6 @@ macro_rules! t {
         }
     };
 }
-
-/// rpc client trait
-pub trait SimpleClient {
-    /// call the server
-    /// the request must be encoded into the ReqBuf
-    /// the response is the raw frame, you should parsing it into final response
-    fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error>;
-}
-
 /// rpc client trait
 pub trait Client {
     /// call the server

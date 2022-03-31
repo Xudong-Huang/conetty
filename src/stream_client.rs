@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
-use crate::SimpleClient;
 
 pub trait SetTimeout {
     fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error>;
@@ -56,8 +55,11 @@ impl<W: Write + Read + SetTimeout> StreamClient<W> {
     }
 }
 
-impl<W: Write + Read> SimpleClient for StreamClient<W> {
-    fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error> {
+impl<W: Write + Read> StreamClient<W> {
+    /// call the server
+    /// the request must be encoded into the ReqBuf
+    /// the response is the raw frame, you should parsing it into final response
+    pub fn call_service(&mut self, req: ReqBuf) -> Result<Frame, Error> {
         let id = self.id;
         self.id += 1;
         info!("request id = {}", id);
