@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::str;
 
-use conetty::{ReqBuf, RspBuf, Server, SimpleClient, TcpClient, TcpServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, SimpleClient, StreamClient, TcpServer, WireError};
 
 struct Echo;
 
@@ -16,7 +16,8 @@ impl Server for Echo {
 fn main() {
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
-    let mut client = TcpClient::connect(addr).unwrap();
+    let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+    let mut client = StreamClient::new(tcp_stream);
 
     for i in 0..10 {
         let mut buf = ReqBuf::new();

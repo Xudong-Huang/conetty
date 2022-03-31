@@ -3,7 +3,7 @@
 use std::io::Write;
 use std::time::Duration;
 
-use conetty::{ReqBuf, RspBuf, Server, SimpleClient, UdsClient, UdsServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, SimpleClient, StreamClient, UdsServer, WireError};
 use may::{coroutine, go};
 
 struct Echo;
@@ -17,9 +17,10 @@ impl Server for Echo {
 
 #[test]
 fn echo() {
-    let path = "/tmp/test_uds";
+    let path = "/tmp/test_another";
     let server = Echo.start(path).unwrap();
-    let mut client = UdsClient::connect(path).unwrap();
+    let unix_stream = may::os::unix::net::UnixStream::connect(path).unwrap();
+    let mut client = StreamClient::new(unix_stream);
 
     let mut req = ReqBuf::new();
     req.write(&vec![5u8; 16]).unwrap();
@@ -45,14 +46,15 @@ fn uds_timeout() {
 
     let path = "/tmp/test_uds1";
     let server = Echo.start(path).unwrap();
-    let mut client = UdsClient::connect(path).unwrap();
+    let unix_stream = may::os::unix::net::UnixStream::connect(path).unwrap();
+    let mut client = StreamClient::new(unix_stream);
 
-    client.set_timeout(Duration::from_millis(500));
+    client.set_timeout(Duration::from_millis(500)).unwrap();
     let mut req = ReqBuf::new();
     write!(req, "aaaaaa").unwrap();
     assert!(client.call_service(req).is_err());
 
-    client.set_timeout(Duration::from_millis(1500));
+    client.set_timeout(Duration::from_millis(1500)).unwrap();
     let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
     assert!(client.call_service(req).is_ok());
@@ -75,7 +77,8 @@ fn multi_client() {
     for i in 0..8 {
         let count_ref = count.clone();
         let h = go!(move || {
-            let mut client = UdsClient::connect(path).unwrap();
+            let unix_stream = may::os::unix::net::UnixStream::connect(path).unwrap();
+            let mut client = StreamClient::new(unix_stream);
             for j in 0..10 {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();

@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use conetty::{ReqBuf, RspBuf, Server, SimpleClient, TcpClient, TcpServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, SimpleClient, StreamClient, TcpServer, WireError};
 use may::go;
 
 struct Echo;
@@ -23,7 +23,8 @@ fn main() {
     let mut vec = vec![];
     for i in 0..100 {
         let handle = go!(move || {
-            let mut client = TcpClient::connect(addr).unwrap();
+            let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+            let mut client = StreamClient::new(tcp_stream);
             for j in 0..1000 {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();

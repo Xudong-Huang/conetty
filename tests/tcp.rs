@@ -1,7 +1,7 @@
 use std::io::Write;
 use std::time::Duration;
 
-use conetty::{ReqBuf, RspBuf, Server, SimpleClient, TcpClient, TcpServer, WireError};
+use conetty::{ReqBuf, RspBuf, Server, SimpleClient, StreamClient, TcpServer, WireError};
 use may::{coroutine, go};
 
 struct Echo;
@@ -17,7 +17,9 @@ impl Server for Echo {
 fn echo() {
     let addr = ("127.0.0.1", 2000);
     let server = Echo.start(&addr).unwrap();
-    let mut client = TcpClient::connect(addr).unwrap();
+
+    let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+    let mut client = StreamClient::new(tcp_stream);
 
     let mut req = ReqBuf::new();
     req.write(&vec![5u8; 16]).unwrap();
@@ -43,14 +45,15 @@ fn tcp_timeout() {
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
-    let mut client = TcpClient::connect(addr).unwrap();
+    let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+    let mut client = StreamClient::new(tcp_stream);
 
-    client.set_timeout(Duration::from_millis(500));
+    client.set_timeout(Duration::from_millis(500)).unwrap();
     let mut req = ReqBuf::new();
     write!(req, "aaaaaa").unwrap();
     assert!(client.call_service(req).is_err());
 
-    client.set_timeout(Duration::from_millis(1500));
+    client.set_timeout(Duration::from_millis(1500)).unwrap();
     let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
     assert!(client.call_service(req).is_ok());
@@ -73,7 +76,8 @@ fn multi_client() {
     for i in 0..8 {
         let count_ref = count.clone();
         let h = go!(move || {
-            let mut client = TcpClient::connect(addr).unwrap();
+            let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+            let mut client = StreamClient::new(tcp_stream);
             for j in 0..10 {
                 let mut req = ReqBuf::new();
                 write!(req, "Hello World! id={}, j={}", i, j).unwrap();

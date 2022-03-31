@@ -1,26 +1,14 @@
-// #![deny(missing_docs)]
 #[macro_use]
 extern crate log;
 
-#[doc(hidden)]
 pub use errors::{Error, WireError};
-#[doc(hidden)]
 pub use frame::{Frame, ReqBuf, RspBuf};
-#[doc(hidden)]
 pub use multiplex_client::MultiplexClient;
-#[doc(hidden)]
 pub use server::{TcpServer, UdpServer};
-#[doc(hidden)]
-pub use tcp_client::TcpClient;
-#[doc(hidden)]
+pub use stream_client::StreamClient;
 pub use udp_client::UdpClient;
 
 #[cfg(unix)]
-#[doc(hidden)]
-pub use uds_client::UdsClient;
-
-#[cfg(unix)]
-#[doc(hidden)]
 pub use server::UdsServer;
 
 macro_rules! t {
@@ -62,17 +50,16 @@ pub trait Server: Send + Sync + Sized + 'static {
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError>;
 }
 
-/// Provides a few different error types.
+/// Provides a few different error types
 mod errors;
 /// raw frame protocol
 mod frame;
 mod multiplex_client;
 mod queued_writer;
-/// Provides server framework.
+/// Provides server framework
 mod server;
 
-mod tcp_client;
-/// Provides client impl.
+/// Provide stream client
+mod stream_client;
+/// Provides udp client
 mod udp_client;
-#[cfg(unix)]
-mod uds_client;
