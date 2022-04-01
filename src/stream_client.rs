@@ -31,16 +31,16 @@ impl SetTimeout for may::os::unix::net::UnixStream {
     }
 }
 
-pub struct StreamClient<W: Write + Read> {
+pub struct StreamClient<S: Write + Read> {
     // each request would have a unique id
     id: u64,
     // the connection
-    stream: BufReader<W>,
+    stream: BufReader<S>,
 }
 
-impl<W: Write + Read> StreamClient<W> {
+impl<S: Write + Read> StreamClient<S> {
     /// connect to the server address
-    pub fn new(stream: W) -> Self {
+    pub fn new(stream: S) -> Self {
         StreamClient {
             id: 0,
             stream: BufReader::with_capacity(1024, stream),
@@ -48,14 +48,14 @@ impl<W: Write + Read> StreamClient<W> {
     }
 }
 
-impl<W: Write + Read + SetTimeout> StreamClient<W> {
+impl<S: Write + Read + SetTimeout> StreamClient<S> {
     /// set timeout
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
         self.stream.get_mut().set_timeout(timeout)
     }
 }
 
-impl<W: Write + Read> StreamClient<W> {
+impl<S: Write + Read> StreamClient<S> {
     /// call the server
     /// the request must be encoded into the ReqBuf
     /// the response is the raw frame, you should parsing it into final response
