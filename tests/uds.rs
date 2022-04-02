@@ -28,8 +28,7 @@ fn echo() {
     let rsp = rsp_frame.decode_rsp().unwrap();
     assert_eq!(rsp, &[5u8; 16]);
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }
 
 #[test]
@@ -59,8 +58,7 @@ fn uds_timeout() {
     write!(req, "bbbbbb").unwrap();
     assert!(client.call_service(req).is_ok());
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }
 
 #[test]
@@ -99,6 +97,5 @@ fn multi_client() {
 
     assert_eq!(count.load(Ordering::Relaxed), 80);
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }

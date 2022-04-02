@@ -4,7 +4,7 @@ extern crate log;
 pub use errors::{Error, WireError};
 pub use frame::{Frame, ReqBuf, RspBuf};
 pub use multiplex_client::MultiplexClient;
-pub use server::{TcpServer, UdpServer};
+pub use server::{ServerInstance, TcpServer, UdpServer};
 pub use stream_client::StreamClient;
 pub use stream_ext::StreamExt;
 pub use udp_client::UdpClient;

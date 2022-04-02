@@ -28,6 +28,5 @@ fn main() {
         println!("recv = {:?}", str::from_utf8(rsp).unwrap());
     }
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }

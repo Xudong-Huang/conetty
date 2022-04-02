@@ -35,6 +35,5 @@ fn main() {
     let rsp = rsp_frame.decode_rsp();
     println!("rsp = {:?}", rsp);
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }

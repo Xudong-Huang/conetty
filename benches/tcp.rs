@@ -29,6 +29,5 @@ fn tcp_echo(b: &mut Bencher) {
         let _rsp = client.call_service(req).unwrap();
     });
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }

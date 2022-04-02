@@ -12,14 +12,25 @@ use may::os::unix::net::UnixListener;
 use may::sync::Mutex;
 use may::{coroutine, go};
 
+/// service instance
+pub struct ServerInstance(coroutine::JoinHandle<()>);
+
+impl ServerInstance {
+    /// shutdown the server instance
+    pub fn shutdown(self) {
+        unsafe { self.0.coroutine().cancel() };
+        self.0.join().expect("failed to shutdown service");
+    }
+}
+
 /// Provides a function for starting the service.
 pub trait UdpServer: Server {
     /// Spawns the service, binding to the given address
     /// return a coroutine that you can cancel it when need to stop the service
-    fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
+    fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<ServerInstance> {
         let sock = UdpSocket::bind(addr)?; // the write half
         let sock1 = sock.try_clone()?; // the read half
-        go!(
+        let instance = go!(
             coroutine::Builder::new().name("UdpServer".to_owned()),
             move || {
                 let server = Arc::new(self);
@@ -54,7 +65,8 @@ pub trait UdpServer: Server {
                     });
                 }
             }
-        )
+        )?;
+        Ok(ServerInstance(instance))
     }
 }
 
@@ -62,9 +74,9 @@ pub trait UdpServer: Server {
 pub trait TcpServer: Server {
     /// Spawns the service, binding to the given address
     /// return a coroutine that you can cancel it when need to stop the service
-    fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<coroutine::JoinHandle<()>> {
+    fn start<L: ToSocketAddrs>(self, addr: L) -> io::Result<ServerInstance> {
         let listener = TcpListener::bind(addr)?;
-        go!(
+        let instance = go!(
             coroutine::Builder::new().name("TcpServer".to_owned()),
             move || {
                 let server = Arc::new(self);
@@ -108,7 +120,8 @@ pub trait TcpServer: Server {
                     });
                 }
             }
-        )
+        )?;
+        Ok(ServerInstance(instance))
     }
 }
 
@@ -117,7 +130,7 @@ pub trait TcpServer: Server {
 pub trait UdsServer: Server {
     /// Spawns the service, binding to the given address
     /// return a coroutine that you can cancel it when need to stop the service
-    fn start<P: AsRef<Path>>(self, path: P) -> io::Result<coroutine::JoinHandle<()>> {
+    fn start<P: AsRef<Path>>(self, path: P) -> io::Result<ServerInstance> {
         struct AutoDrop(UnixListener, PathBuf);
         impl Drop for AutoDrop {
             fn drop(&mut self) {
@@ -127,7 +140,7 @@ pub trait UdsServer: Server {
 
         std::fs::remove_file(&path).ok();
         let listener = AutoDrop(UnixListener::bind(&path)?, path.as_ref().to_owned());
-        go!(
+        let instance = go!(
             coroutine::Builder::new().name("Unix Socket Server".to_owned()),
             move || {
                 let server = Arc::new(self);
@@ -172,7 +185,8 @@ pub trait UdsServer: Server {
                     });
                 }
             }
-        )
+        )?;
+        Ok(ServerInstance(instance))
     }
 }
 

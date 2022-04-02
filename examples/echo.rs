@@ -126,7 +126,7 @@ impl<T: EchoRpc + ::std::panic::RefUnwindSafe + 'static> RpcServer<T> {
     pub fn start<L: ::std::net::ToSocketAddrs>(
         self,
         addr: L,
-    ) -> ::std::io::Result<may::coroutine::JoinHandle<()>> {
+    ) -> ::std::io::Result<conetty::ServerInstance> {
         conetty::UdpServer::start(self, addr)
     }
 }
@@ -151,6 +151,5 @@ fn main() {
         println!("recv = {:?}", data);
     }
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }

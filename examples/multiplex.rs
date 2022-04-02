@@ -52,6 +52,5 @@ fn main() {
         println!("wait for {} done", i);
     }
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }

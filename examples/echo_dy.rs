@@ -49,7 +49,7 @@ impl conetty::Server for RpcServer {
 impl RpcServer {
     pub fn start<L: ::std::net::ToSocketAddrs>(
         addr: L,
-    ) -> ::std::io::Result<may::coroutine::JoinHandle<()>> {
+    ) -> ::std::io::Result<conetty::ServerInstance> {
         let server = RpcServer {
             map: RwLock::new(HashMap::new()),
         };
@@ -247,6 +247,5 @@ fn main() {
         println!("recv = {:?}", data);
     }
 
-    unsafe { server.coroutine().cancel() };
-    server.join().ok();
+    server.shutdown();
 }
