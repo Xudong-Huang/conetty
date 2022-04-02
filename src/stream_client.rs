@@ -1,18 +1,18 @@
-use std::io::{self, BufReader, Read, Write};
+use std::io::{self, BufReader};
 use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::stream_ext::StreamExt;
 
-pub struct StreamClient<S: Write + Read> {
+pub struct StreamClient<S: StreamExt> {
     // each request would have a unique id
     id: u64,
     // the connection
     stream: BufReader<S>,
 }
 
-impl<S: Write + Read> StreamClient<S> {
+impl<S: StreamExt> StreamClient<S> {
     /// connect to the server address
     pub fn new(stream: S) -> Self {
         StreamClient {
@@ -22,14 +22,14 @@ impl<S: Write + Read> StreamClient<S> {
     }
 }
 
-impl<S: Write + Read + StreamExt> StreamClient<S> {
+impl<S: StreamExt> StreamClient<S> {
     /// set timeout
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
         self.stream.get_mut().set_read_timeout(timeout)
     }
 }
 
-impl<S: Write + Read> StreamClient<S> {
+impl<S: StreamExt> StreamClient<S> {
     /// call the server
     /// the request must be encoded into the ReqBuf
     /// the response is the raw frame, you should parsing it into final response

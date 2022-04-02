@@ -1,15 +1,18 @@
-pub trait StreamExt: Sized + Send + 'static {
-    fn try_clone(&self) -> std::io::Result<Self>;
-    fn set_read_timeout(&mut self, timeout: std::time::Duration) -> std::io::Result<()>;
+use std::io::{self, Read, Write};
+use std::time::Duration;
+
+pub trait StreamExt: Sized + Read + Write + Send + 'static {
+    fn try_clone(&self) -> io::Result<Self>;
+    fn set_read_timeout(&mut self, timeout: Duration) -> io::Result<()>;
 }
 
 macro_rules! impl_stream_ext {
     ($name: ty) => {
         impl StreamExt for $name {
-            fn try_clone(&self) -> std::io::Result<Self> {
+            fn try_clone(&self) -> io::Result<Self> {
                 (*self).try_clone()
             }
-            fn set_read_timeout(&mut self, timeout: std::time::Duration) -> std::io::Result<()> {
+            fn set_read_timeout(&mut self, timeout: Duration) -> io::Result<()> {
                 (*self).set_read_timeout(Some(timeout))
             }
         }

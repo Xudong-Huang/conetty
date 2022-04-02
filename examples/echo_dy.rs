@@ -4,8 +4,8 @@ extern crate token_id;
 extern crate log;
 
 use std::collections::HashMap;
-use std::io::{Read, Write};
 
+use conetty::StreamExt;
 use may::sync::RwLock;
 
 pub type DispatchFn = fn(u64, &[u8], &mut conetty::RspBuf) -> Result<(), conetty::WireError>;
@@ -98,7 +98,7 @@ pub trait RpcRegister: conetty::Client {
     }
 }
 
-impl<S: Read + Write> RpcRegister for conetty::MultiplexClient<S> {}
+impl<S: StreamExt> RpcRegister for conetty::MultiplexClient<S> {}
 // impl RpcRegister for conetty::TcpClient {}
 
 // rpm_impl! {
@@ -207,7 +207,7 @@ pub trait RpcClient: conetty::Client {
     }
 }
 
-impl<S: Read + Write> RpcClient for conetty::MultiplexClient<S> {}
+impl<S: StreamExt> RpcClient for conetty::MultiplexClient<S> {}
 // impl RpcClient for conetty::TcpClient {}
 
 // ------------------------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-use std::io::{self, BufReader, Read, Write};
+use std::io::{self, BufReader};
 use std::time::Duration;
 
 use crate::errors::Error;
@@ -10,7 +10,7 @@ use crate::Client;
 use may::{coroutine, go};
 use may_waiter::TokenWaiter;
 #[derive(Debug)]
-pub struct MultiplexClient<S: Read + Write> {
+pub struct MultiplexClient<S: StreamExt> {
     // default timeout is 10s
     timeout: Option<Duration>,
     // the connection
@@ -19,7 +19,7 @@ pub struct MultiplexClient<S: Read + Write> {
     listener: Option<coroutine::JoinHandle<()>>,
 }
 
-impl<S: Read + Write> Drop for MultiplexClient<S> {
+impl<S: StreamExt> Drop for MultiplexClient<S> {
     fn drop(&mut self) {
         if ::std::thread::panicking() {
             return;
@@ -32,7 +32,7 @@ impl<S: Read + Write> Drop for MultiplexClient<S> {
     }
 }
 
-impl<S: Read + Write + StreamExt> MultiplexClient<S> {
+impl<S: StreamExt> MultiplexClient<S> {
     /// connect to the server address
     pub fn new(stream: S) -> io::Result<Self> {
         // here we must clone the socket for read
@@ -77,7 +77,7 @@ impl<S: Read + Write + StreamExt> MultiplexClient<S> {
     }
 }
 
-impl<S: Read + Write> Client for MultiplexClient<S> {
+impl<S: StreamExt> Client for MultiplexClient<S> {
     fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let waiter = TokenWaiter::new();
         let id = waiter.id().unwrap();
