@@ -16,18 +16,16 @@ impl Server for Echo {
 #[test]
 fn echo() {
     let addr = ("127.0.0.1", 2000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
 
     let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
     let mut client = StreamClient::new(tcp_stream);
 
     let mut req = ReqBuf::new();
-    req.write(&vec![5u8; 16]).unwrap();
+    req.write_all(&[5u8; 16]).unwrap();
     let rsp_frame = client.call_service(req).unwrap();
     let rsp = rsp_frame.decode_rsp().unwrap();
     assert_eq!(rsp, &[5u8; 16]);
-
-    server.shutdown();
 }
 
 #[test]
@@ -43,7 +41,7 @@ fn tcp_timeout() {
     }
 
     let addr = ("127.0.0.1", 4000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
     let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
     let mut client = StreamClient::new(tcp_stream);
 
@@ -56,8 +54,6 @@ fn tcp_timeout() {
     let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
     assert!(client.call_service(req).is_ok());
-
-    server.shutdown();
 }
 
 #[test]
@@ -66,7 +62,7 @@ fn multi_client() {
     use std::sync::Arc;
 
     let addr = ("127.0.0.1", 3000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
 
     let count = Arc::new(AtomicUsize::new(0));
 
@@ -95,6 +91,4 @@ fn multi_client() {
     }
 
     assert_eq!(count.load(Ordering::Relaxed), 80);
-
-    server.shutdown();
 }

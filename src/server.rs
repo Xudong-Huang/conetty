@@ -13,13 +13,14 @@ use may::sync::Mutex;
 use may::{coroutine, go};
 
 /// service instance
-pub struct ServerInstance(coroutine::JoinHandle<()>);
+pub struct ServerInstance(Option<coroutine::JoinHandle<()>>);
 
-impl ServerInstance {
-    /// shutdown the server instance
-    pub fn shutdown(self) {
-        unsafe { self.0.coroutine().cancel() };
-        self.0.join().ok();
+impl Drop for ServerInstance {
+    fn drop(&mut self) {
+        if let Some(s) = self.0.take() {
+            unsafe { s.coroutine().cancel() };
+            s.join().ok();
+        }
     }
 }
 
@@ -66,7 +67,7 @@ pub trait UdpServer: Server {
                 }
             }
         )?;
-        Ok(ServerInstance(instance))
+        Ok(ServerInstance(Some(instance)))
     }
 }
 
@@ -121,7 +122,7 @@ pub trait TcpServer: Server {
                 }
             }
         )?;
-        Ok(ServerInstance(instance))
+        Ok(ServerInstance(Some(instance)))
     }
 }
 
@@ -186,7 +187,7 @@ pub trait UdsServer: Server {
                 }
             }
         )?;
-        Ok(ServerInstance(instance))
+        Ok(ServerInstance(Some(instance)))
     }
 }
 

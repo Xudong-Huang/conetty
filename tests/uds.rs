@@ -18,17 +18,15 @@ impl Server for Echo {
 #[test]
 fn echo() {
     let path = "/tmp/test_another";
-    let server = Echo.start(path).unwrap();
+    let _server = Echo.start(path).unwrap();
     let unix_stream = may::os::unix::net::UnixStream::connect(path).unwrap();
     let mut client = StreamClient::new(unix_stream);
 
     let mut req = ReqBuf::new();
-    req.write(&vec![5u8; 16]).unwrap();
+    req.write_all(&[5u8; 16]).unwrap();
     let rsp_frame = client.call_service(req).unwrap();
     let rsp = rsp_frame.decode_rsp().unwrap();
     assert_eq!(rsp, &[5u8; 16]);
-
-    server.shutdown();
 }
 
 #[test]
@@ -44,7 +42,7 @@ fn uds_timeout() {
     }
 
     let path = "/tmp/test_uds1";
-    let server = Echo.start(path).unwrap();
+    let _server = Echo.start(path).unwrap();
     let unix_stream = may::os::unix::net::UnixStream::connect(path).unwrap();
     let mut client = StreamClient::new(unix_stream);
 
@@ -57,8 +55,6 @@ fn uds_timeout() {
     let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
     assert!(client.call_service(req).is_ok());
-
-    server.shutdown();
 }
 
 #[test]
@@ -67,7 +63,7 @@ fn multi_client() {
     use std::sync::Arc;
 
     let path = "/tmp/test_uds2";
-    let server = Echo.start(path).unwrap();
+    let _server = Echo.start(path).unwrap();
 
     let count = Arc::new(AtomicUsize::new(0));
 
@@ -96,6 +92,4 @@ fn multi_client() {
     }
 
     assert_eq!(count.load(Ordering::Relaxed), 80);
-
-    server.shutdown();
 }

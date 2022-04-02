@@ -19,7 +19,7 @@ fn main() {
     env_logger::init();
 
     let addr = ("127.0.0.1", 4000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
     let mut client = UdpClient::connect(addr).unwrap();
 
     client.set_timeout(Duration::from_millis(500));
@@ -34,6 +34,4 @@ fn main() {
     println!("rsp_frame = {:?}", rsp_frame);
     let rsp = rsp_frame.decode_rsp();
     println!("rsp = {:?}", rsp);
-
-    server.shutdown();
 }

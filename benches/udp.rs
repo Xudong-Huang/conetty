@@ -18,14 +18,12 @@ impl Server for Echo {
 #[bench]
 fn udp_echo(b: &mut Bencher) {
     let addr = ("127.0.0.1", 3000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
     let mut client = UdpClient::connect(addr).unwrap();
 
     b.iter(|| {
         let mut req = ReqBuf::new();
-        req.write(&vec![0; 100]).unwrap();
+        req.write_all(&[0; 100]).unwrap();
         let _rsp = client.call_service(req).unwrap();
     });
-
-    server.shutdown();
 }

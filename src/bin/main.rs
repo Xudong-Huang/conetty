@@ -15,7 +15,7 @@ impl Server for Echo {
 
 fn main() {
     let addr = ("127.0.0.1", 4000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
     let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
     let mut client = StreamClient::new(tcp_stream);
 
@@ -27,6 +27,4 @@ fn main() {
         let rsp = data.decode_rsp().unwrap();
         println!("recv = {:?}", str::from_utf8(rsp).unwrap());
     }
-
-    server.shutdown();
 }
