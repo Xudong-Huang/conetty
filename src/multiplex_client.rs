@@ -4,32 +4,11 @@ use std::time::Duration;
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
 use crate::queued_writer::QueuedWriter;
+use crate::stream_ext::StreamExt;
 use crate::Client;
 
 use may::{coroutine, go};
 use may_waiter::TokenWaiter;
-
-pub trait TryClone: Sized + Send + 'static {
-    fn try_clone(&self) -> Result<Self, io::Error>;
-}
-
-macro_rules! impl_try_clone {
-    ($name: ty) => {
-        impl TryClone for $name {
-            fn try_clone(&self) -> Result<Self, io::Error> {
-                self.try_clone()
-            }
-        }
-    };
-}
-
-impl_try_clone!(std::net::TcpStream);
-impl_try_clone!(may::net::TcpStream);
-#[cfg(unix)]
-impl_try_clone!(std::os::unix::net::UnixStream);
-#[cfg(unix)]
-impl_try_clone!(may::os::unix::net::UnixStream);
-
 #[derive(Debug)]
 pub struct MultiplexClient<S: Read + Write> {
     // default timeout is 10s
@@ -53,7 +32,7 @@ impl<S: Read + Write> Drop for MultiplexClient<S> {
     }
 }
 
-impl<S: Read + Write + TryClone> MultiplexClient<S> {
+impl<S: Read + Write + StreamExt> MultiplexClient<S> {
     /// connect to the server address
     pub fn new(stream: S) -> io::Result<Self> {
         // here we must clone the socket for read

@@ -3,27 +3,7 @@ use std::time::Duration;
 
 use crate::errors::Error;
 use crate::frame::{Frame, ReqBuf};
-
-pub trait SetTimeout {
-    fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error>;
-}
-
-macro_rules! impl_set_timeout {
-    ($name: ty) => {
-        impl SetTimeout for $name {
-            fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
-                self.set_read_timeout(Some(timeout))
-            }
-        }
-    };
-}
-
-impl_set_timeout!(std::net::TcpStream);
-impl_set_timeout!(may::net::TcpStream);
-#[cfg(unix)]
-impl_set_timeout!(std::os::unix::net::UnixStream);
-#[cfg(unix)]
-impl_set_timeout!(may::os::unix::net::UnixStream);
+use crate::stream_ext::StreamExt;
 
 pub struct StreamClient<S: Write + Read> {
     // each request would have a unique id
@@ -42,10 +22,10 @@ impl<S: Write + Read> StreamClient<S> {
     }
 }
 
-impl<S: Write + Read + SetTimeout> StreamClient<S> {
+impl<S: Write + Read + StreamExt> StreamClient<S> {
     /// set timeout
     pub fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
-        self.stream.get_mut().set_timeout(timeout)
+        self.stream.get_mut().set_read_timeout(timeout)
     }
 }
 

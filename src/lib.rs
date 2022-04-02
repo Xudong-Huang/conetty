@@ -3,9 +3,10 @@ extern crate log;
 
 pub use errors::{Error, WireError};
 pub use frame::{Frame, ReqBuf, RspBuf};
-pub use multiplex_client::{MultiplexClient, TryClone};
+pub use multiplex_client::MultiplexClient;
 pub use server::{TcpServer, UdpServer};
-pub use stream_client::{SetTimeout, StreamClient};
+pub use stream_client::StreamClient;
+pub use stream_ext::StreamExt;
 pub use udp_client::UdpClient;
 
 #[cfg(unix)]
@@ -22,6 +23,7 @@ macro_rules! t {
         }
     };
 }
+
 /// rpc client trait
 pub trait Client {
     /// call the server
@@ -54,3 +56,5 @@ mod server;
 mod stream_client;
 /// Provides udp client
 mod udp_client;
+
+mod stream_ext;
