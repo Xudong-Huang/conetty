@@ -22,14 +22,13 @@ arrayvec = "0.7"
 byteorder = "1"
 crossbeam = "0.8"
 may_waiter = "0.1"
-co_managed =  { git = "https://github.com/Xudong-Huang/co_managed.git" }
+co_managed = { git = "https://github.com/Xudong-Huang/co_managed.git" }
 
 [dev-dependencies]
-serde = "1"
 bincode = "1"
 env_logger = "0.9"
-serde_derive = "1"
+serde = { version = "1.0", features = ["derive"] }
 token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 
 [profile.release]
-opt-level=3
+opt-level = 3

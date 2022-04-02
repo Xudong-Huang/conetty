@@ -1,5 +1,4 @@
-#[macro_use]
-extern crate serde_derive;
+use serde::{Serialize, Deserialize};
 
 struct Echo;
 
