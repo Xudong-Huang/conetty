@@ -21,7 +21,9 @@ fn main() {
 
     let addr = ("127.0.0.1", 4000);
     let server = Echo.start(&addr).unwrap();
-    let mut client = MultiplexClient::connect(addr).unwrap();
+
+    let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+    let mut client = MultiplexClient::new(tcp_stream).unwrap();
     client.set_timeout(Duration::from_secs(5));
 
     let client = Arc::new(client);

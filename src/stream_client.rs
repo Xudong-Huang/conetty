@@ -8,28 +8,22 @@ pub trait SetTimeout {
     fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error>;
 }
 
-impl SetTimeout for std::net::TcpStream {
-    fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
-        self.set_read_timeout(Some(timeout))
-    }
+macro_rules! impl_set_timeout {
+    ($name: ty) => {
+        impl SetTimeout for $name {
+            fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
+                self.set_read_timeout(Some(timeout))
+            }
+        }
+    };
 }
-impl SetTimeout for may::net::TcpStream {
-    fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
-        self.set_read_timeout(Some(timeout))
-    }
-}
+
+impl_set_timeout!(std::net::TcpStream);
+impl_set_timeout!(may::net::TcpStream);
 #[cfg(unix)]
-impl SetTimeout for std::os::unix::net::UnixStream {
-    fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
-        self.set_read_timeout(Some(timeout))
-    }
-}
+impl_set_timeout!(std::os::unix::net::UnixStream);
 #[cfg(unix)]
-impl SetTimeout for may::os::unix::net::UnixStream {
-    fn set_timeout(&mut self, timeout: Duration) -> Result<(), io::Error> {
-        self.set_read_timeout(Some(timeout))
-    }
-}
+impl_set_timeout!(may::os::unix::net::UnixStream);
 
 pub struct StreamClient<S: Write + Read> {
     // each request would have a unique id

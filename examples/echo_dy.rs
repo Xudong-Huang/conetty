@@ -3,6 +3,7 @@ extern crate token_id;
 #[macro_use]
 extern crate log;
 
+use std::io::{Read, Write};
 use std::collections::HashMap;
 
 use may::sync::RwLock;
@@ -97,7 +98,7 @@ pub trait RpcRegister: conetty::Client {
     }
 }
 
-impl RpcRegister for conetty::MultiplexClient {}
+impl<S: Read + Write> RpcRegister for conetty::MultiplexClient<S> {}
 // impl RpcRegister for conetty::TcpClient {}
 
 // rpm_impl! {
@@ -206,7 +207,7 @@ pub trait RpcClient: conetty::Client {
     }
 }
 
-impl RpcClient for conetty::MultiplexClient {}
+impl<S: Read + Write> RpcClient for conetty::MultiplexClient<S> {}
 // impl RpcClient for conetty::TcpClient {}
 
 // ------------------------------------------------------------------------------------------------
@@ -217,7 +218,9 @@ fn main() {
 
     let addr = ("127.0.0.1", 4000);
     let server = RpcServer::start(&addr).unwrap();
-    let mut client = MultiplexClient::connect(addr).unwrap();
+    
+    let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
+    let mut client = MultiplexClient::new(tcp_stream).unwrap();
     client.set_timeout(::std::time::Duration::from_millis(100));
 
     for i in 0..10 {

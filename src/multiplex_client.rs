@@ -1,5 +1,4 @@
-use std::io::{self, BufReader};
-use std::net::ToSocketAddrs;
+use std::io::{self, BufReader, Read, Write};
 use std::time::Duration;
 
 use crate::errors::Error;
@@ -7,21 +6,41 @@ use crate::frame::{Frame, ReqBuf};
 use crate::queued_writer::QueuedWriter;
 use crate::Client;
 
-use may::net::TcpStream;
 use may::{coroutine, go};
 use may_waiter::TokenWaiter;
 
+pub trait TryClone: Sized + Send + 'static {
+    fn try_clone(&self) -> Result<Self, io::Error>;
+}
+
+macro_rules! impl_try_clone {
+    ($name: ty) => {
+        impl TryClone for $name {
+            fn try_clone(&self) -> Result<Self, io::Error> {
+                self.try_clone()
+            }
+        }
+    };
+}
+
+impl_try_clone!(std::net::TcpStream);
+impl_try_clone!(may::net::TcpStream);
+#[cfg(unix)]
+impl_try_clone!(std::os::unix::net::UnixStream);
+#[cfg(unix)]
+impl_try_clone!(may::os::unix::net::UnixStream);
+
 #[derive(Debug)]
-pub struct MultiplexClient {
+pub struct MultiplexClient<S: Read + Write> {
     // default timeout is 10s
     timeout: Option<Duration>,
     // the connection
-    sock: QueuedWriter<TcpStream>,
+    sock: QueuedWriter<S>,
     // the listening coroutine
     listener: Option<coroutine::JoinHandle<()>>,
 }
 
-impl Drop for MultiplexClient {
+impl<S: Read + Write> Drop for MultiplexClient<S> {
     fn drop(&mut self) {
         if ::std::thread::panicking() {
             return;
@@ -34,16 +53,13 @@ impl Drop for MultiplexClient {
     }
 }
 
-impl MultiplexClient {
+impl<S: Read + Write + TryClone> MultiplexClient<S> {
     /// connect to the server address
-    pub fn connect<L: ToSocketAddrs>(addr: L) -> io::Result<MultiplexClient> {
-        // this is a client side server that listening from server!
-        let sock = TcpStream::connect(addr)?;
-
+    pub fn new(stream: S) -> io::Result<Self> {
         // here we must clone the socket for read
         // we can't share it between coroutines
-        let sock1 = sock.try_clone()?;
-        let mut r_stream = BufReader::new(sock1);
+        let stream1 = stream.try_clone()?;
+        let mut r_stream = BufReader::new(stream1);
         let listener = go!(
             coroutine::Builder::new().name("MultiPlexClientListener".to_owned()),
             move || {
@@ -70,7 +86,7 @@ impl MultiplexClient {
 
         Ok(MultiplexClient {
             timeout: None,
-            sock: QueuedWriter::new(sock),
+            sock: QueuedWriter::new(stream),
             listener: Some(listener),
         })
     }
@@ -82,7 +98,7 @@ impl MultiplexClient {
     }
 }
 
-impl Client for MultiplexClient {
+impl<S: Read + Write> Client for MultiplexClient<S> {
     fn call_service(&self, req: ReqBuf) -> Result<Frame, Error> {
         let waiter = TokenWaiter::new();
         let id = waiter.id().unwrap();
