@@ -19,7 +19,7 @@ impl ServerInstance {
     /// shutdown the server instance
     pub fn shutdown(self) {
         unsafe { self.0.coroutine().cancel() };
-        self.0.join().expect("failed to shutdown service");
+        self.0.join().ok();
     }
 }
 
