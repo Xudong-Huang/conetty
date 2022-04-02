@@ -3,8 +3,8 @@ extern crate token_id;
 #[macro_use]
 extern crate log;
 
-use std::io::{Read, Write};
 use std::collections::HashMap;
+use std::io::{Read, Write};
 
 use may::sync::RwLock;
 
@@ -218,7 +218,7 @@ fn main() {
 
     let addr = ("127.0.0.1", 4000);
     let server = RpcServer::start(&addr).unwrap();
-    
+
     let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
     let mut client = MultiplexClient::new(tcp_stream).unwrap();
     client.set_timeout(::std::time::Duration::from_millis(100));
