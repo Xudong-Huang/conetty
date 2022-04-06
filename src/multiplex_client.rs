@@ -21,9 +21,9 @@ pub struct MultiplexClient<S: StreamExt> {
 
 impl<S: StreamExt> Drop for MultiplexClient<S> {
     fn drop(&mut self) {
-        if ::std::thread::panicking() {
-            return;
-        }
+        // if ::std::thread::panicking() {
+        //     return;
+        // }
 
         if let Some(h) = self.listener.take() {
             unsafe { h.coroutine().cancel() };

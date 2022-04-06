@@ -15,14 +15,23 @@ use may::{coroutine, go};
 /// service instance
 pub struct ServerInstance(Option<coroutine::JoinHandle<()>>);
 
-impl Drop for ServerInstance {
-    fn drop(&mut self) {
+impl ServerInstance {
+    pub fn shutdown(mut self) {
         if let Some(s) = self.0.take() {
             unsafe { s.coroutine().cancel() };
             s.join().ok();
         }
     }
 }
+
+// impl Drop for ServerInstance {
+//     fn drop(&mut self) {
+//         if let Some(s) = self.0.take() {
+//             unsafe { s.coroutine().cancel() };
+//             s.join().ok();
+//         }
+//     }
+// }
 
 /// Provides a function for starting the service.
 pub trait UdpServer: Server {
