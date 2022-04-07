@@ -20,7 +20,7 @@ fn main() {
     may::config().set_workers(4);
 
     let addr = ("127.0.0.1", 4000);
-    let _server = Echo.start(&addr).unwrap();
+    let server = Echo.start(&addr).unwrap();
 
     let tcp_stream = may::net::TcpStream::connect(addr).unwrap();
     let mut client = MultiplexClient::new(tcp_stream).unwrap();
@@ -51,4 +51,6 @@ fn main() {
         j.join().unwrap();
         println!("wait for {} done", i);
     }
+
+    server.shutdown();
 }
