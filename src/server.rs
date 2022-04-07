@@ -8,6 +8,7 @@ use crate::queued_writer::QueuedWriter;
 use crate::Server;
 use co_managed::Manager;
 use may::net::{TcpListener, UdpSocket};
+#[cfg(unix)]
 use may::os::unix::net::UnixListener;
 use may::sync::Mutex;
 use may::{coroutine, go};
