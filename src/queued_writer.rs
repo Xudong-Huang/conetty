@@ -85,8 +85,10 @@ impl<W: Write> QueuedWriter<W> {
         // other concurrent writes would just push the data
         let mut cnt = self.data_count.fetch_add(1, Ordering::AcqRel);
         if cnt == 0 {
-            // in most cases this would not block since we have only one writer
-            let mut writer = self.writer.lock().unwrap();
+            // in any cases this should not block since we have only one writer
+            #[allow(clippy::cast_ref_to_mut)]
+            let writer = unsafe { &mut *(&self.writer as *const _ as *mut Mutex<W>) };
+            let writer = writer.get_mut().unwrap();
 
             loop {
                 let mut total_data = ArrayVec::new();
