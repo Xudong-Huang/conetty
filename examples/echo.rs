@@ -136,7 +136,7 @@ fn main() {
     env_logger::init();
 
     let addr = ("127.0.0.1", 4000);
-    let server = RpcServer(Echo).start(&addr).unwrap();
+    let _server = RpcServer(Echo).start(&addr).unwrap();
     let mut client = EchoRpcClient::connect(addr).unwrap();
     client.set_timeout(::std::time::Duration::from_millis(100));
 
@@ -150,6 +150,4 @@ fn main() {
         let data = client.add(i, i);
         println!("recv = {:?}", data);
     }
-
-    server.shutdown();
 }

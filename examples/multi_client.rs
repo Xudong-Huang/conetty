@@ -15,10 +15,9 @@ impl Server for Echo {
 
 fn main() {
     env_logger::init();
-    may::config().set_workers(4);
 
     let addr = ("127.0.0.1", 4000);
-    let server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(&addr).unwrap();
 
     let mut vec = vec![];
     for i in 0..100 {
@@ -46,6 +45,4 @@ fn main() {
         j.join().unwrap();
         println!("wait for {} done", i);
     }
-
-    server.shutdown();
 }

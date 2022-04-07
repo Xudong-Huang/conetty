@@ -1,3 +1,4 @@
+#![cfg(unix)]
 #![feature(test)]
 extern crate test;
 

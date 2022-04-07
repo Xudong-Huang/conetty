@@ -21,13 +21,10 @@ pub struct MultiplexClient<S: StreamExt> {
 
 impl<S: StreamExt> Drop for MultiplexClient<S> {
     fn drop(&mut self) {
-        // if ::std::thread::panicking() {
-        //     return;
-        // }
-
         if let Some(h) = self.listener.take() {
             unsafe { h.coroutine().cancel() };
-            h.join().ok();
+            // FIXME: join here when bug fix in thread context in may
+            // h.join().ok();
         }
     }
 }
