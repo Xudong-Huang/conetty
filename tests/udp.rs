@@ -16,7 +16,7 @@ impl Server for Echo {
 #[test]
 fn echo() {
     let addr = ("127.0.0.1", 2000);
-    let _server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(addr).unwrap();
     let mut client = UdpClient::connect(addr).unwrap();
 
     let mut req = ReqBuf::new();
@@ -39,7 +39,7 @@ fn tcp_timeout() {
     }
 
     let addr = ("127.0.0.1", 4000);
-    let _server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(addr).unwrap();
     let mut client = UdpClient::connect(addr).unwrap();
 
     client.set_timeout(Duration::from_millis(500));
@@ -59,7 +59,7 @@ fn multi_client() {
     use std::sync::Arc;
 
     let addr = ("127.0.0.1", 3000);
-    let _server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(addr).unwrap();
 
     let count = Arc::new(AtomicUsize::new(0));
 

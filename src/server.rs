@@ -1,6 +1,5 @@
 use std::io::{self, BufReader, Cursor};
 use std::net::ToSocketAddrs;
-use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use crate::frame::{Frame, RspBuf};
@@ -62,7 +61,7 @@ pub trait UdpServer: Server {
                         let s = sock.lock().unwrap();
                         match s.send_to(&data, addr) {
                             Ok(_) => {}
-                            Err(err) => return error!("udp send_to failed, err={:?}", err),
+                            Err(err) => error!("udp send_to failed, err={:?}", err),
                         }
                     });
                 }

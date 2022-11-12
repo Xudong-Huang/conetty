@@ -18,7 +18,7 @@ impl Server for Echo {
 #[bench]
 fn udp_echo(b: &mut Bencher) {
     let addr = ("127.0.0.1", 3000);
-    let _server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(addr).unwrap();
     let mut client = UdpClient::connect(addr).unwrap();
 
     b.iter(|| {
