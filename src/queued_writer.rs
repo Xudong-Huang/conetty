@@ -81,10 +81,9 @@ impl<W: Write> QueuedWriter<W> {
     /// it's safe and efficient to call this API concurrently
     pub fn write(&self, data: Vec<u8>) {
         self.data_queue.push(data);
-        // only allow the first write perform the write operation
-        // other concurrent writes would just push the data
-        let mut cnt = self.data_count.fetch_add(1, Ordering::AcqRel);
-        if cnt == 0 {
+        // only allow the first writer perform the write operation
+        // other concurrent writers would just push the data
+        if self.data_count.fetch_add(1, Ordering::AcqRel) == 0 {
             // in any cases this should not block since we have only one writer
             #[allow(clippy::cast_ref_to_mut)]
             let writer = unsafe { &mut *(&self.writer as *const _ as *mut Mutex<W>) };
@@ -92,17 +91,14 @@ impl<W: Write> QueuedWriter<W> {
 
             loop {
                 let mut total_data = ArrayVec::new();
-                let mut pack_num = 0;
-                while pack_num < MAX_VEC_BUF {
-                    if let Some(data) = self.data_queue.pop() {
-                        total_data.push(data);
-                        cnt += 1;
-                        pack_num += 1;
-                    } else {
+                while let Some(data) = self.data_queue.pop() {
+                    total_data.push(data);
+                    if total_data.len() >= MAX_VEC_BUF {
                         break;
                     }
                 }
 
+                let cnt = total_data.len();
                 let io_bufs = VecBufs::new(total_data);
                 if let Err(e) = io_bufs.write_all(&mut *writer) {
                     // FIXME: handle the error
@@ -113,9 +109,6 @@ impl<W: Write> QueuedWriter<W> {
                 if self.data_count.fetch_sub(cnt, Ordering::AcqRel) == cnt {
                     break;
                 }
-
-                // restart over
-                cnt = 0;
             }
         }
     }
