@@ -1,8 +1,8 @@
 use std::io::{self, BufReader, Cursor};
 use std::net::ToSocketAddrs;
-use std::sync::Arc;
 #[cfg(unix)]
 use std::path::{Path, PathBuf};
+use std::sync::Arc;
 
 use crate::frame::{Frame, RspBuf};
 use crate::queued_writer::QueuedWriter;
