@@ -1,7 +1,7 @@
 [package]
 name = "conetty"
-version = "0.2.0"
-edition = "2018"
+version = "0.2.1"
+edition = "2021"
 authors = ["Xudong Huang <huangxu008@hotmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/conetty"
@@ -26,7 +26,7 @@ co_managed = { git = "https://github.com/Xudong-Huang/co_managed.git" }
 
 [dev-dependencies]
 bincode = "1"
-env_logger = "0.9"
+env_logger = "0.10"
 serde = { version = "1.0", features = ["derive"] }
 token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 

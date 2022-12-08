@@ -17,6 +17,8 @@ impl Server for Echo {
 
 fn main() {
     env_logger::init();
+    #[cfg(debug_assertions)]
+    may::config().set_stack_size(0x2000);
 
     let addr = ("127.0.0.1", 4000);
     let _server = Echo.start(addr).unwrap();

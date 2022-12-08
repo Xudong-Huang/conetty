@@ -1,3 +1,4 @@
+use std::fmt;
 use std::io::{self, BufReader};
 use std::time::Duration;
 
@@ -7,16 +8,26 @@ use crate::queued_writer::QueuedWriter;
 use crate::stream_ext::StreamExt;
 use crate::Client;
 
+use may::io::SplitWriter;
 use may::{coroutine, go};
 use may_waiter::TokenWaiter;
-#[derive(Debug)]
+
 pub struct MultiplexClient<S: StreamExt> {
     // default timeout is 10s
     timeout: Option<Duration>,
     // the connection
-    sock: QueuedWriter<S>,
+    sock: QueuedWriter<SplitWriter<S>>,
     // the listening coroutine
     listener: Option<coroutine::JoinHandle<()>>,
+}
+
+impl<S: StreamExt> fmt::Debug for MultiplexClient<S> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("MultiplexClient")
+            .field("timeout", &self.timeout)
+            .field("listener", &self.listener)
+            .finish()
+    }
 }
 
 impl<S: StreamExt> Drop for MultiplexClient<S> {
@@ -34,8 +45,8 @@ impl<S: StreamExt> MultiplexClient<S> {
     pub fn new(stream: S) -> io::Result<Self> {
         // here we must clone the socket for read
         // we can't share it between coroutines
-        let stream1 = stream.try_clone()?;
-        let mut r_stream = BufReader::new(stream1);
+        let (reader, writer) = stream.split()?;
+        let mut r_stream = BufReader::new(reader);
         let listener = go!(
             coroutine::Builder::new().name("MultiPlexClientListener".to_owned()),
             move || {
@@ -62,7 +73,7 @@ impl<S: StreamExt> MultiplexClient<S> {
 
         Ok(MultiplexClient {
             timeout: None,
-            sock: QueuedWriter::new(stream),
+            sock: QueuedWriter::new(writer),
             listener: Some(listener),
         })
     }
