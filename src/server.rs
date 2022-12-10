@@ -20,7 +20,7 @@ pub struct ServerInstance(Option<coroutine::JoinHandle<()>>);
 
 impl ServerInstance {
     /// join the service, this would wait until the service is stopped
-    pub fn join(&mut self) -> std::thread::Result<()> {
+    pub fn join(mut self) -> std::thread::Result<()> {
         if let Some(handle) = self.0.take() {
             handle.join()
         } else {
