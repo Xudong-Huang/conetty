@@ -18,6 +18,17 @@ use may::{coroutine, go};
 /// service instance
 pub struct ServerInstance(Option<coroutine::JoinHandle<()>>);
 
+impl ServerInstance {
+    /// join the service, this would wait until the service is stopped
+    pub fn join(&mut self) -> std::thread::Result<()> {
+        if let Some(handle) = self.0.take() {
+            handle.join()
+        } else {
+            Ok(())
+        }
+    }
+}
+
 impl Drop for ServerInstance {
     fn drop(&mut self) {
         if let Some(s) = self.0.take() {
