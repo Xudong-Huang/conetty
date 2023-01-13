@@ -3,7 +3,7 @@ use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use arrayvec::ArrayVec;
-use may::queue::mpsc_seg_queue::SegQueue;
+use crossbeam::queue::SegQueue;
 use may::sync::Mutex;
 
 const MAX_VEC_BUF: usize = 64;
