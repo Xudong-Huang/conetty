@@ -9,7 +9,6 @@ use crate::queued_writer::QueuedWriter;
 use crate::Server;
 
 use co_managed::Manager;
-use may::io::SplitIo;
 use may::net::{TcpListener, UdpSocket};
 #[cfg(unix)]
 use may::os::unix::net::UnixListener;
@@ -99,13 +98,13 @@ pub trait TcpServer: Server {
                 let manager = Manager::new();
                 for stream in listener.incoming() {
                     let stream = t!(stream);
-                    let (rs, ws) = t!(stream.split());
                     let server = server.clone();
                     manager.add(move |_| {
+                        let rs = stream.try_clone().expect("failed to clone stream");
                         // the read half of the stream
                         let mut rs = BufReader::new(rs);
                         // the write half of the stream
-                        let ws = Arc::new(QueuedWriter::new(ws));
+                        let ws = Arc::new(QueuedWriter::new(stream));
 
                         loop {
                             let req = match Frame::decode_from(&mut rs) {
@@ -163,14 +162,14 @@ pub trait UdsServer: Server {
                 let manager = Manager::new();
                 for stream in listener.0.incoming() {
                     let stream = t!(stream);
-                    let (rs, ws) = t!(stream.split());
                     let server = server.clone();
                     manager.add(move |_| {
+                        let rs = stream.try_clone().expect("failed to clone stream");
                         // the read half of the stream
                         let mut rs = BufReader::new(rs);
                         // the write half need to be protected by mutex
                         // for that coroutine io obj can't shared safely
-                        let ws = Arc::new(QueuedWriter::new(ws));
+                        let ws = Arc::new(QueuedWriter::new(stream));
 
                         loop {
                             let req = match Frame::decode_from(&mut rs) {
