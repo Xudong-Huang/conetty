@@ -59,7 +59,7 @@ impl RpcServer {
     pub fn register(&self, lib_path: &str) -> Result<(), conetty::WireError> {
         use std::path::Path;
         let lib_path = Path::new(lib_path);
-        println!("lib_path = {:?}", lib_path);
+        println!("lib_path = {lib_path:?}");
         // load the map
 
         let map = get_dispatch_register();
@@ -68,8 +68,8 @@ impl RpcServer {
 
         for &(req_id, f) in map {
             match w_map.insert(req_id, f) {
-                Some(_) => warn!("register rpc updated. req_id={}", req_id),
-                None => info!("register rpc. req_id={}", req_id),
+                Some(_) => warn!("register rpc updated. req_id={req_id}"),
+                None => info!("register rpc. req_id={req_id}"),
             }
         }
 
@@ -224,26 +224,26 @@ fn main() {
     client.set_timeout(::std::time::Duration::from_millis(100));
 
     for i in 0..10 {
-        let s = format!("Hello World! id={}", i);
+        let s = format!("Hello World! id={i}");
         let data = client.echo(s);
-        println!("recv = {:?}", data);
+        println!("recv = {data:?}");
     }
 
     for i in 0..10 {
         let data = client.add(i, i);
-        println!("recv = {:?}", data);
+        println!("recv = {data:?}");
     }
 
     client.register("file_path").unwrap();
 
     for i in 0..10 {
-        let s = format!("Hello World! id={}", i);
+        let s = format!("Hello World! id={i}");
         let data = client.echo(s);
-        println!("recv = {:?}", data);
+        println!("recv = {data:?}");
     }
 
     for i in 0..100 {
         let data = client.add(i, i);
-        println!("recv = {:?}", data);
+        println!("recv = {data:?}");
     }
 }

@@ -34,22 +34,22 @@ fn main() {
         let j = go!(move || {
             for j in 0..1000 {
                 let mut req = ReqBuf::new();
-                write!(req, "Hello World! id={}, j={}", i, j).unwrap();
+                write!(req, "Hello World! id={i}, j={j}").unwrap();
                 match client.call_service(req) {
-                    Err(err) => println!("recv err = {:?}", err),
+                    Err(err) => println!("recv err = {err:?}"),
                     Ok(frame) => {
                         let rsp = frame.decode_rsp().unwrap();
                         log::info!("recv = {:?}", std::str::from_utf8(rsp).unwrap());
                     }
                 }
             }
-            println!("thread done, id={}", i);
+            println!("thread done, id={i}");
         });
         vec.push(j);
     }
 
     for (i, j) in vec.into_iter().enumerate() {
         j.join().unwrap();
-        println!("wait for {} done", i);
+        println!("wait for {i} done");
     }
 }

@@ -141,13 +141,13 @@ fn main() {
     client.set_timeout(::std::time::Duration::from_millis(100));
 
     for i in 0..10 {
-        let s = format!("Hello World! id={}", i);
+        let s = format!("Hello World! id={i}");
         let data = client.echo(s);
-        println!("recv = {:?}", data);
+        println!("recv = {data:?}");
     }
 
     for i in 0..10 {
         let data = client.add(i, i);
-        println!("recv = {:?}", data);
+        println!("recv = {data:?}");
     }
 }

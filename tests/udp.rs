@@ -70,12 +70,12 @@ fn multi_client() {
             let mut client = UdpClient::connect(addr).unwrap();
             for j in 0..10 {
                 let mut req = ReqBuf::new();
-                write!(req, "Hello World! id={}, j={}", i, j).unwrap();
+                write!(req, "Hello World! id={i}, j={j}").unwrap();
                 match client.call_service(req) {
                     Ok(_) => {
                         count_ref.fetch_add(1, Ordering::Relaxed);
                     }
-                    Err(err) => panic!("recv err = {:?}", err),
+                    Err(err) => panic!("recv err = {err:?}"),
                 }
             }
         });

@@ -26,23 +26,23 @@ fn main() {
             let mut client = StreamClient::new(tcp_stream);
             for j in 0..1000 {
                 let mut req = ReqBuf::new();
-                write!(req, "Hello World! id={}, j={}", i, j).unwrap();
+                write!(req, "Hello World! id={i}, j={j}").unwrap();
                 match client.call_service(req) {
                     Ok(frame) => {
                         let rsp = frame.decode_rsp().unwrap();
                         println!("recv = {:?}", std::str::from_utf8(rsp).unwrap());
                     }
-                    Err(err) => println!("recv err = {:?}", err),
+                    Err(err) => println!("recv err = {err:?}"),
                 }
             }
             // ::std::mem::forget(client);
-            println!("thread done, id={}", i);
+            println!("thread done, id={i}");
         });
         vec.push(handle);
     }
 
     for (i, j) in vec.into_iter().enumerate() {
         j.join().unwrap();
-        println!("wait for {} done", i);
+        println!("wait for {i} done");
     }
 }

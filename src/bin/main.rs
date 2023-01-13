@@ -7,7 +7,7 @@ struct Echo;
 
 impl Server for Echo {
     fn service(&self, req: &[u8], rsp: &mut RspBuf) -> Result<(), WireError> {
-        println!("req = {:?}", req);
+        println!("req = {req:?}");
         rsp.write_all(req)
             .map_err(|e| WireError::ServerSerialize(e.to_string()))
     }
@@ -21,8 +21,7 @@ fn main() {
 
     for i in 0..10 {
         let mut buf = ReqBuf::new();
-        buf.write_fmt(format_args!("Hello World! id={}", i))
-            .unwrap();
+        buf.write_fmt(format_args!("Hello World! id={i}")).unwrap();
         let data = client.call_service(buf).unwrap();
         let rsp = data.decode_rsp().unwrap();
         println!("recv = {:?}", str::from_utf8(rsp).unwrap());

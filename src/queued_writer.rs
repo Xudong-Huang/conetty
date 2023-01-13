@@ -3,7 +3,7 @@ use std::io::Write;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 use arrayvec::ArrayVec;
-use crossbeam::queue::SegQueue;
+use may::queue::mpsc_seg_queue::SegQueue;
 use may::sync::Mutex;
 
 const MAX_VEC_BUF: usize = 64;
@@ -54,6 +54,7 @@ impl VecBufs {
 
     // write all data from the vecs to the writer
     fn write_all<W: Write>(mut self, writer: &mut W) -> std::io::Result<()> {
+        // writer.write_all_vectored(&mut self.get_io_slice())
         while !self.is_empty() {
             let n = writer.write_vectored(&self.get_io_slice())?;
             self.advance(n);

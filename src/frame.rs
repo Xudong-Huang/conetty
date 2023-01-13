@@ -36,8 +36,8 @@ impl Frame {
         info!("decode len = {:?}", len);
 
         if len > FRAME_MAX_LEN {
-            let s = format!("decode too big frame length. len={}", len);
-            error!("{}", s);
+            let s = format!("decode too big frame length. len={len}");
+            error!("{s}");
             return Err(io::Error::new(ErrorKind::InvalidInput, s));
         }
 
@@ -103,8 +103,8 @@ impl Frame {
             })),
             3 => Err(Status(unsafe { String::from_utf8_unchecked(data.into()) })),
             _ => {
-                let s = format!("invalid response type. ty={}", ty);
-                error!("{}", s);
+                let s = format!("invalid response type. ty={ty}");
+                error!("{s}");
                 Err(ClientDeserialize(s))
             }
         }

@@ -20,7 +20,7 @@ impl Server for Echo {
 fn uds_echo(b: &mut Bencher) {
     may::config().set_workers(2).set_pool_capacity(1000);
     let addr = "/tmp/test_uds";
-    let _server = Echo.start(&addr).unwrap();
+    let _server = Echo.start(addr).unwrap();
     let tcp_stream = may::os::unix::net::UnixStream::connect(addr).unwrap();
     let mut client = StreamClient::new(tcp_stream);
 

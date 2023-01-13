@@ -8,7 +8,7 @@ struct Echo;
 
 impl Server for Echo {
     fn service(&self, req: &[u8], _rsp: &mut RspBuf) -> Result<(), WireError> {
-        println!("req = {:?}", req);
+        println!("req = {req:?}");
         coroutine::sleep(Duration::from_secs(1));
         // rsp.write_all(req).map_err(|e| WireError::ServerSerialize(e.to_string()))
         Err(WireError::Status("timeout".to_owned()))
@@ -31,7 +31,7 @@ fn main() {
     let mut req = ReqBuf::new();
     write!(req, "bbbbbb").unwrap();
     let rsp_frame = client.call_service(req).unwrap();
-    println!("rsp_frame = {:?}", rsp_frame);
+    println!("rsp_frame = {rsp_frame:?}");
     let rsp = rsp_frame.decode_rsp();
-    println!("rsp = {:?}", rsp);
+    println!("rsp = {rsp:?}");
 }
