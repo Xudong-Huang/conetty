@@ -18,7 +18,7 @@ description = "General client server framework for Rust based on coroutine."
 log = "0.4"
 may = "0.3"
 thiserror = "1"
-arrayvec = "0.7"
+smallvec= "1"
 byteorder = "1"
 crossbeam = "0.8"
 may_waiter = "0.1"
@@ -32,3 +32,6 @@ token_id = { git = "https://github.com/Xudong-Huang/token_id.git" }
 
 [profile.release]
 opt-level = 3
+
+[patch.crates-io]
+may = { path = "../may" }

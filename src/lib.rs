@@ -1,3 +1,5 @@
+#![feature(write_all_vectored)]
+
 #[macro_use]
 extern crate log;
 
