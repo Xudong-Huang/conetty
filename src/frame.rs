@@ -217,7 +217,7 @@ impl RspBuf {
             SERVER_POLL_ENCODE => {
                 // the server need to poll the client, will be filtered out by multiplex_client
             }
-            1 | 2 | 3 => {
+            1..=3 => {
                 cursor.get_mut().resize(len as usize + 25, 0);
                 cursor.write_all(data).unwrap();
             }
